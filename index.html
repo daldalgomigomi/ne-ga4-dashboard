@@ -140,6 +140,17 @@ section.block:last-child{margin-bottom:0;}
 .situation-points li{font-size:13.5px; line-height:1.6; color:#D1D5DB; padding-left:16px; position:relative;}
 .situation-points li::before{content:'—'; position:absolute; left:0; color:#6B7280;}
 .situation-points strong{color:#fff; font-weight:700;}
+.data-source-head{
+  display:flex; align-items:baseline; gap:10px; margin-bottom:14px; padding-bottom:10px;
+  border-bottom:2px solid var(--border);
+}
+.data-source-tag{
+  font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:13px;
+  padding:4px 12px; border-radius:6px; white-space:nowrap;
+}
+.data-source-head.traffic .data-source-tag{background:var(--accent-soft); color:var(--pc);}
+.data-source-head.purchase .data-source-tag{background:var(--mo-soft); color:var(--mo);}
+.data-source-desc{font-size:13px; color:var(--ink-soft);}
 .block-head{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
 h2.block-title{font-size:15.5px; font-weight:700; margin:0; color:var(--ink);}
 p.block-note{color:var(--ink-soft); font-size:13px; margin:-6px 0 16px;}
@@ -649,15 +660,45 @@ function buildSituationSummary(){
 
 function renderPanel1(){
   const el = document.getElementById('p1');
+  const directMoSessions = traffic.filter(t=>t.channel==='Direct'&&t.device==='MO').reduce((a,b)=>a+b.sessions,0);
+  const directShare = moStat.sessions ? (directMoSessions / moStat.sessions * 100) : 0;
+  const topTrafficChannel = chDev.slice().sort((a,b)=>b.sessions-a.sessions)[0];
+  const topRevenueChannel = chDev.slice().sort((a,b)=>b.revenue-a.revenue)[0];
+
   el.innerHTML = buildSituationSummary() + `
     <section class="block">
-      <div class="block-head"><h2 class="block-title">핵심 지표 <span class="hl yellow">Overview</span></h2></div>
+      <div class="data-source-head traffic">
+        <span class="data-source-tag">유입 데이터</span>
+        <span class="data-source-desc">사람이 사이트에 몇 번, 어디서 들어왔는지</span>
+      </div>
       <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-label">총 세션</div>
           <div class="kpi-value">${fmtNum(totalSessions)}</div>
           <div class="kpi-sub">PC ${fmtNum(pcStat.sessions)} · MO ${fmtNum(moStat.sessions)}</div>
         </div>
+        <div class="kpi-card">
+          <div class="kpi-label">가장 많이 들어온 채널</div>
+          <div class="kpi-value" style="font-size:17px;">${topTrafficChannel?topTrafficChannel.channel:'-'}</div>
+          <div class="kpi-sub">${topTrafficChannel?fmtNum(topTrafficChannel.sessions)+'세션 · '+topTrafficChannel.device:'-'}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">MO 다이렉트(출처 불명) 비중</div>
+          <div class="kpi-value">${directShare.toFixed(1)}%</div>
+          <div class="kpi-sub">모바일 세션 ${fmtNum(moStat.sessions)}건 중 ${fmtNum(directMoSessions)}건</div>
+        </div>
+      </div>
+      <div class="callout blue">
+        <strong>유입 결과만 보면:</strong> PC는 '능률 통합회원사이트'를 통한 유입이 절반 이상(52.6%)으로 안정적인 편이고, MO는 '다이렉트'(38.75%)와 '구글 자연검색'(17.62%)이 커서 정확히 어디서 왔는지 추적이 어려운 세션이 많습니다.
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="data-source-head purchase">
+        <span class="data-source-tag">구매 데이터</span>
+        <span class="data-source-desc">들어온 사람 중 실제로 몇 명이, 얼마를 구매했는지</span>
+      </div>
+      <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-label">총 거래 수</div>
           <div class="kpi-value">${fmtNum(totalTxn)}건</div>
@@ -674,10 +715,13 @@ function renderPanel1(){
           <div class="kpi-sub">세션당 수익 ${fmtWon(revPerSession)}</div>
         </div>
       </div>
+      <div class="callout mint">
+        <strong>구매 결과만 보면:</strong> 수익 기준 1위 채널은 <strong>${topRevenueChannel?topRevenueChannel.channel:'-'}(${topRevenueChannel?topRevenueChannel.device:''})</strong>이며 ${topRevenueChannel?fmtWon(topRevenueChannel.revenue):'-'}를 만들었습니다. PC 평균 객단가(${fmtWon(pcStat.aov)})가 MO(${fmtWon(moStat.aov)})보다 높은데, 주니어랩(B2B) 고액 거래가 PC에 몰려있는 영향이 큽니다.
+      </div>
     </section>
 
     <section class="block">
-      <div class="block-head"><h2 class="block-title">PC <span class="hl blue">vs</span> MO 비교</h2></div>
+      <div class="block-head"><h2 class="block-title">유입 vs 구매, <span class="hl blue">PC와 MO 비교</span></h2></div>
       <div class="grid-2 even">
         <div class="chart-box">
           <div class="chart-title">세션 · 거래수 · 수익 비교</div>
@@ -692,9 +736,6 @@ function renderPanel1(){
               <tr><td><span class="badge mo">MO</span></td><td class="num">${fmtNum(moStat.sessions)}</td><td class="num">${moStat.txn}</td><td class="num">${fmtWon(moStat.revenue)}</td><td class="num">${fmtWon(moStat.aov)}</td><td class="num">${moStat.conv.toFixed(3)}%</td></tr>
             </tbody>
           </table>
-          <div class="callout">
-            <strong>PC가 MO보다 거래수·객단가 모두 높음.</strong> 주니어랩(B2B, lms.nelab.co.kr) 고액 거래가 PC 쪽에 몰려있는 영향이 큼 — 이 채널을 제외하면 PC/MO 격차는 줄어들 것으로 추정.
-          </div>
         </div>
       </div>
     </section>
