@@ -188,6 +188,27 @@ p.block-note{color:var(--ink-soft); font-size:13px; margin:-6px 0 16px;}
 .callout ul{margin:6px 0 0; padding-left:18px;}
 .callout li{margin-bottom:4px;}
 
+/* Action item cards (실행 제안) */
+.action-card{
+  border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px 18px; margin-bottom:14px; background:var(--surface); box-shadow:var(--shadow-sm);
+  border-left:4px solid var(--border-strong);
+}
+.action-card:last-child{margin-bottom:0;}
+.action-card.urgent{border-left-color:var(--danger);}
+.action-card.opportunity{border-left-color:var(--mo);}
+.action-card.watch{border-left-color:var(--warn);}
+.action-tag{
+  display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700;
+  text-transform:uppercase; letter-spacing:.04em; padding:3px 9px; border-radius:20px; margin-bottom:8px;
+  background:var(--danger-soft); color:var(--danger);
+}
+.action-card.opportunity .action-tag{background:var(--mo-soft); color:var(--mo);}
+.action-card.watch .action-tag{background:#FFF4E0; color:var(--warn);}
+.action-title{font-size:15px; font-weight:700; color:var(--ink); margin-bottom:6px;}
+.action-desc{font-size:13.5px; color:var(--ink-soft); line-height:1.6; margin:0 0 8px;}
+.action-todo{font-size:13.5px; color:var(--ink); font-weight:600; margin:0; padding-top:8px; border-top:1px dashed var(--border);}
+
 /* Tables */
 table.data-table{width:100%; border-collapse:collapse; font-size:13.5px; background:var(--surface);}
 table.data-table th{
@@ -238,10 +259,9 @@ table.data-table td.num, table.data-table th.num{font-family:'IBM Plex Mono', mo
     </div>
     <nav class="sidenav" id="tabNav">
       <button class="tab-btn active" data-panel="p1"><span class="num">01</span>종합 현황</button>
-      <button class="tab-btn" data-panel="p2"><span class="num">02</span>유입 채널 분석</button>
-      <button class="tab-btn" data-panel="p3"><span class="num">03</span>구매 전환 분석</button>
-      <button class="tab-btn" data-panel="p4"><span class="num">04</span>채널×기기 성과표</button>
-      <button class="tab-btn" data-panel="p5"><span class="num">05</span>Raw 데이터</button>
+      <button class="tab-btn" data-panel="p2"><span class="num">02</span>채널별 성과</button>
+      <button class="tab-btn" data-panel="p3"><span class="num">03</span>실행 제안</button>
+      <button class="tab-btn" data-panel="p4"><span class="num">04</span>Raw 데이터</button>
     </nav>
     <div class="sidebar-foot">DATA<br>유입 raw · 구매 raw<br>2026.06.09–06.28</div>
   </aside>
@@ -261,7 +281,6 @@ table.data-table td.num, table.data-table th.num{font-family:'IBM Plex Mono', mo
       <div class="panel" id="p2"></div>
       <div class="panel" id="p3"></div>
       <div class="panel" id="p4"></div>
-      <div class="panel" id="p5"></div>
     </main>
   </div>
 </div>
@@ -586,7 +605,6 @@ async function loadAllData(isManual){
     safeRender('p2', renderPanel2);
     safeRender('p3', renderPanel3);
     safeRender('p4', renderPanel4);
-    safeRender('p5', renderPanel5);
     const now = new Date();
     const timeStr = now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
     setStatus('ok', '실시간 연동 · ' + timeStr + ' 기준');
@@ -680,20 +698,6 @@ function renderPanel1(){
         </div>
       </div>
     </section>
-
-    <section class="block">
-      <div class="block-head"><h2 class="block-title">가장 <span class="hl coral">주의가 필요한</span> 지점</h2></div>
-      <div class="grid-2 even">
-        <div class="callout coral">
-          <strong>MO 다이렉트 유입 38.7%</strong> — 세션의 3분의 1 이상이 유입경로 미상으로 잡힘. 문자 링크, 앱 내 브라우저 접속 등이 '다이렉트'로 잡히는 경우가 많음.
-          <ul><li>개선안: 모든 마케팅 채널(문자·카카오·이메일)에 UTM 파라미터 부착</li></ul>
-        </div>
-        <div class="callout mint">
-          <strong>Naver BSA는 MO 전환이 훨씬 우수함</strong> — MO 전환율 0.49% vs PC 0.072%(약 6.8배). MO 위주 키워드·시간대 최적화 여지가 큼.
-          <ul><li>개선안: MO 전환 높은 키워드 재리스트업 + 구매 시간대 기반 노출 스케줄 조정</li></ul>
-        </div>
-      </div>
-    </section>
   `;
 
   new Chart(document.getElementById('chartPCMO'), {
@@ -714,192 +718,15 @@ function renderPanel1(){
 }
 
 // ===================================================================
-// PANEL 2 — 유입 채널 분석
+// PANEL 2 — 채널별 성과 (유입 + 구매 + 전환율을 한 화면에 통합)
 // ===================================================================
-function topChannelsByDevice(device, n=10){
-  const arr = traffic.filter(t=>t.device===device).slice().sort((a,b)=>b.sessions-a.sessions);
-  const top = arr.slice(0, n);
-  const restSessions = sum(arr.slice(n), t=>t.sessions);
-  return { top, restSessions, total: sum(arr, t=>t.sessions) };
-}
+let chSortKey = 'sessions';
+let chSortDir = -1;
 
-function renderPanel2(){
-  const el = document.getElementById('p2');
-  const pcTop = topChannelsByDevice('PC', 8);
-  const moTop = topChannelsByDevice('MO', 8);
-
-  const rowsHtml = (topObj) => topObj.top.map(t => `
-    <tr><td>${t.source}</td><td class="num">${fmtNum(t.sessions)}</td><td class="num">${t.sessions_pct.toFixed(2)}%</td><td class="num">${fmtWon(t.revenue)}</td></tr>
-  `).join('') + (topObj.restSessions > 0 ? `<tr><td style="color:var(--ink-faint)">기타</td><td class="num">${fmtNum(topObj.restSessions)}</td><td class="num">${(topObj.restSessions/topObj.total*100).toFixed(2)}%</td><td class="num">—</td></tr>` : '');
-
-  el.innerHTML = `
-    <section class="block">
-      <div class="block-head"><h2 class="block-title">전체 유입 구조 <span class="hl yellow">PC vs MO</span></h2></div>
-      <div class="grid-2 even">
-        <div class="chart-box">
-          <div class="chart-title">세션 비중</div>
-          <div class="chart-canvas-wrap short"><canvas id="chartSessionShare"></canvas></div>
-        </div>
-        <div class="chart-box">
-          <div class="chart-title">세션당 수익</div>
-          <div class="chart-canvas-wrap short"><canvas id="chartRevPerSession"></canvas></div>
-        </div>
-      </div>
-    </section>
-
-    <section class="block">
-      <div class="block-head"><h2 class="block-title">PC 채널별 유입 <span class="hl blue">Top 8</span></h2></div>
-      <div class="grid-2">
-        <div class="chart-box">
-          <div class="chart-title">PC 소스/매체별 세션</div>
-          <div class="chart-canvas-wrap tall"><canvas id="chartPCChannels"></canvas></div>
-        </div>
-        <div class="chart-box">
-          <table class="data-table">
-            <thead><tr><th>소스/매체</th><th class="num">세션</th><th class="num">비중</th><th class="num">수익</th></tr></thead>
-            <tbody>${rowsHtml(pcTop)}</tbody>
-          </table>
-        </div>
-      </div>
-      <div class="callout blue">'능률 통합회원사이트' 경유 유입이 PC 세션의 52.6%로 압도적. 통합회원 로그인 흐름을 통해 자사몰로 유입되는 구조가 견고하게 자리잡음.</div>
-    </section>
-
-    <section class="block">
-      <div class="block-head"><h2 class="block-title">MO 채널별 유입 <span class="hl mint">Top 8</span></h2></div>
-      <div class="grid-2">
-        <div class="chart-box">
-          <div class="chart-title">MO 소스/매체별 세션</div>
-          <div class="chart-canvas-wrap tall"><canvas id="chartMOChannels"></canvas></div>
-        </div>
-        <div class="chart-box">
-          <table class="data-table">
-            <thead><tr><th>소스/매체</th><th class="num">세션</th><th class="num">비중</th><th class="num">수익</th></tr></thead>
-            <tbody>${rowsHtml(moTop)}</tbody>
-          </table>
-        </div>
-      </div>
-      <div class="callout">MO는 '다이렉트'(38.75%)가 1위, '구글 자연검색'이 17.62%로 PC(1.29%) 대비 압도적으로 높음 — 구글 유입은 대부분 부가자료(eBook/오디오북) 다운로드 목적의 재방문 고객으로 추정.</div>
-    </section>
-  `;
-
-  new Chart(document.getElementById('chartSessionShare'), {
-    type: 'doughnut',
-    data: { labels:['PC','MO'], datasets:[{ data:[pcStat.sessions, moStat.sessions], backgroundColor:[COLORS.pc, COLORS.mo], borderWidth:0 }] },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}} }
-  });
-
-  new Chart(document.getElementById('chartRevPerSession'), {
-    type: 'bar',
-    data: { labels:['PC','MO'], datasets:[{ data:[Math.round(pcStat.revenue/pcStat.sessions), Math.round(moStat.revenue/moStat.sessions)], backgroundColor:[COLORS.pc, COLORS.mo], borderRadius:6, barThickness:60 }] },
-    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>fmtWon(c.parsed.x)}}}, scales:{x:{grid:{color:COLORS.rule}}, y:{grid:{display:false}}} }
-  });
-
-  new Chart(document.getElementById('chartPCChannels'), {
-    type: 'bar',
-    data: { labels: pcTop.top.map(t=>t.source.length>22? t.source.slice(0,22)+'…':t.source), datasets:[{ data: pcTop.top.map(t=>t.sessions), backgroundColor: COLORS.pc, borderRadius:4 }] },
-    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{color:COLORS.rule}}, y:{grid:{display:false}}} }
-  });
-
-  new Chart(document.getElementById('chartMOChannels'), {
-    type: 'bar',
-    data: { labels: moTop.top.map(t=>t.source.length>22? t.source.slice(0,22)+'…':t.source), datasets:[{ data: moTop.top.map(t=>t.sessions), backgroundColor: COLORS.mo, borderRadius:4 }] },
-    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{color:COLORS.rule}}, y:{grid:{display:false}}} }
-  });
-}
-
-// ===================================================================
-// PANEL 3 — 구매 전환 분석
-// ===================================================================
-function renderPanel3(){
-  const el = document.getElementById('p3');
-
-  const bySource = groupBy(purchase, p=>p.source);
-  let sourceRows = Array.from(bySource.entries()).map(([source, arr])=>({
-    source, txn: arr.length, revenue: sum(arr, p=>p.revenue), device: arr[0].device
-  })).sort((a,b)=>b.revenue-a.revenue).slice(0,10);
-
-  const byBrandChannel = groupBy(purchase, p=>p.channel);
-  const brandRows = Array.from(byBrandChannel.entries()).map(([ch,arr])=>({ channel: ch, txn: arr.length, revenue: sum(arr,p=>p.revenue) })).sort((a,b)=>b.txn-a.txn);
-
-  el.innerHTML = `
-    <section class="block">
-      <div class="block-head"><h2 class="block-title">구매유저 첫 유입 소스 <span class="hl yellow">Top 10</span></h2></div>
-      <div class="grid-2">
-        <div class="chart-box">
-          <div class="chart-title">거래수 기준 상위 소스/매체 (수익 기준 정렬)</div>
-          <div class="chart-canvas-wrap tall"><canvas id="chartTopSource"></canvas></div>
-        </div>
-        <div class="chart-box">
-          <table class="data-table">
-            <thead><tr><th>소스/매체</th><th>기기</th><th class="num">거래수</th><th class="num">수익</th></tr></thead>
-            <tbody>${sourceRows.map(r=>`<tr><td>${r.source}</td><td><span class="badge ${r.device.toLowerCase()}">${r.device}</span></td><td class="num">${r.txn}</td><td class="num">${fmtWon(r.revenue)}</td></tr>`).join('')}</tbody>
-          </table>
-        </div>
-      </div>
-      <div class="callout mint">'다이렉트 유입'이 거래 21건·수익 ${fmtWon(sum(purchase.filter(p=>p.channel==='Direct'),p=>p.revenue))}으로 1위. lms.nelab.co.kr(주니어랩 B2B)은 3건뿐이지만 건당 객단가가 가장 높아 총수익 기여도가 큼.</div>
-    </section>
-
-    <section class="block">
-      <div class="block-head"><h2 class="block-title">채널 그룹별 구매 기여도</h2></div>
-      <div class="chart-box">
-        <div class="chart-title">채널 그룹별 거래수 vs 수익</div>
-        <div class="chart-canvas-wrap tall"><canvas id="chartBrandChannel"></canvas></div>
-      </div>
-    </section>
-
-    <section class="block">
-      <div class="block-head"><h2 class="block-title">거래 단가 분포</h2></div>
-      <div class="chart-box">
-        <div class="chart-title">거래별 구매 수익 분포 (PC/MO, 낮은→높은 순)</div>
-        <div class="chart-canvas-wrap tall"><canvas id="chartTxnDist"></canvas></div>
-      </div>
-      <div class="callout">MO에는 0원(포인트 100% 사용) 거래가 없고, PC에서만 1건(google/organic) 발생. 고액 거래(₩130,000 이상)는 대부분 PC — B2B·능률 통합회원 채널에 집중.</div>
-    </section>
-  `;
-
-  new Chart(document.getElementById('chartTopSource'), {
-    type: 'bar',
-    data: { labels: sourceRows.map(r=>r.source.length>20? r.source.slice(0,20)+'…':r.source), datasets:[{ data: sourceRows.map(r=>r.revenue), backgroundColor: sourceRows.map(r=>r.device==='PC'?COLORS.pc:COLORS.mo), borderRadius:4 }] },
-    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>fmtWon(c.parsed.x)}}}, scales:{x:{grid:{color:COLORS.rule}}, y:{grid:{display:false}}} }
-  });
-
-  new Chart(document.getElementById('chartBrandChannel'), {
-    type: 'bar',
-    data: {
-      labels: brandRows.map(r=>r.channel),
-      datasets: [
-        { label:'거래수', backgroundColor: COLORS.yellow, borderRadius:4, data: brandRows.map(r=>r.txn), yAxisID:'y' },
-        { label:'수익(만원)', backgroundColor: COLORS.coral, borderRadius:4, data: brandRows.map(r=>Math.round(r.revenue/10000)), yAxisID:'y1' }
-      ]
-    },
-    options: {
-      responsive:true, maintainAspectRatio:false,
-      plugins:{legend:{position:'top'}},
-      scales:{
-        y:{ position:'left', grid:{color:COLORS.rule}, title:{display:true, text:'거래수', font:{size:11}} },
-        y1:{ position:'right', grid:{display:false}, title:{display:true, text:'수익(만원)', font:{size:11}} },
-        x:{ grid:{display:false} }
-      }
-    }
-  });
-
-  const sortedRevenue = purchase.map(p=>({revenue:p.revenue, device:p.device})).sort((a,b)=>a.revenue-b.revenue);
-  new Chart(document.getElementById('chartTxnDist'), {
-    type: 'bar',
-    data: { labels: sortedRevenue.map((_,i)=>i+1), datasets:[{ data: sortedRevenue.map(r=>r.revenue), backgroundColor: sortedRevenue.map(r=>r.device==='PC'?COLORS.pc:COLORS.mo), borderRadius:2 }] },
-    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>fmtWon(c.parsed.y)}}}, scales:{ x:{grid:{display:false}, ticks:{display:false}}, y:{grid:{color:COLORS.rule}} } }
-  });
-}
-
-// ===================================================================
-// PANEL 4 — 채널×기기 성과표
-// ===================================================================
-let p4SortKey = 'sessions';
-let p4SortDir = -1;
-
-function renderP4Table(){
-  const tbody = document.getElementById('p4TableBody');
-  const rows = chDev.slice().sort((a,b)=> (a[p4SortKey]-b[p4SortKey]) * p4SortDir);
+function renderChannelTable(){
+  const tbody = document.getElementById('chTableBody');
+  if(!tbody) return;
+  const rows = chDev.slice().sort((a,b)=> (a[chSortKey]-b[chSortKey]) * chSortDir);
   tbody.innerHTML = rows.map(r=>`
     <tr>
       <td>${r.channel}</td>
@@ -913,52 +740,74 @@ function renderP4Table(){
   `).join('');
 }
 
-function renderPanel4(){
-  const el = document.getElementById('p4');
+function renderPanel2(){
+  const el = document.getElementById('p2');
+
+  const qualified = chDev.filter(r=>r.sessions>=50).slice().sort((a,b)=>b.conv_rate-a.conv_rate).slice(0,10);
+  const topBySessions = chDev.slice().sort((a,b)=>b.sessions-a.sessions).slice(0,10);
+
   el.innerHTML = `
     <section class="block">
-      <div class="block-head"><h2 class="block-title">채널 × 기기 <span class="hl coral">전환 성과표</span></h2></div>
-      <p class="block-note">유입 raw와 구매 raw를 채널·기기 기준으로 조인하여 세션당 전환율과 수익 효율을 계산했습니다. 헤더를 클릭하면 정렬됩니다.</p>
+      <div class="block-head"><h2 class="block-title">채널별 성과 <span class="hl yellow">한눈에 보기</span></h2></div>
+      <p class="block-note">유입(세션)과 구매(거래·수익)를 채널·기기 단위로 합쳐서, 어디서 사람이 오고 어디서 실제로 팔리는지 한 표로 봅니다. 헤더 클릭하면 정렬됩니다.</p>
       <div class="table-scroll">
         <table class="data-table">
           <thead>
             <tr>
               <th data-key="channel">채널</th>
               <th data-key="device">기기</th>
-              <th class="num" data-key="sessions">세션<span class="arrow">▾</span></th>
+              <th class="num" data-key="sessions">세션</th>
               <th class="num" data-key="txn">거래수</th>
               <th class="num" data-key="revenue">수익</th>
               <th class="num" data-key="conv_rate">전환율</th>
               <th class="num" data-key="rev_per_session">세션당 수익</th>
             </tr>
           </thead>
-          <tbody id="p4TableBody"></tbody>
+          <tbody id="chTableBody"></tbody>
         </table>
-      </div>
-      <div class="callout mint">
-        <strong>전환율 최상위: 주니어랩(B2B) PC 4.29%</strong>, NE북스 MO 1.23%, Google 자연검색 PC 0.69% — 세션 규모는 작지만 전환 효율이 매우 높은 채널.
-        <ul><li>Google 자연검색 MO는 세션 2,027건(전체 2위 규모)임에도 구매 전환 0건 — 대부분 부가자료 다운로드 목적의 방문으로 추정되며, 구매 유도 CTA 보강 검토 필요.</li></ul>
       </div>
     </section>
 
     <section class="block">
-      <div class="block-head"><h2 class="block-title">전환율 <span class="hl blue">상위 채널</span> (세션 50+ 기준)</h2></div>
+      <div class="block-head"><h2 class="block-title">세션이 <span class="hl blue">가장 많은</span> 채널</h2></div>
+      <div class="chart-box">
+        <div class="chart-canvas-wrap tall"><canvas id="chartTopSessions"></canvas></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><h2 class="block-title">전환율이 <span class="hl mint">가장 높은</span> 채널 (세션 50+ 기준)</h2></div>
       <div class="chart-box">
         <div class="chart-canvas-wrap tall"><canvas id="chartConvRate"></canvas></div>
+      </div>
+      <div class="callout mint">
+        <strong>주니어랩(B2B) PC가 전환율 4.29%로 압도적 1위</strong> — 세션은 적지만(70건) 방문한 사람은 거의 다 구매로 이어짐. NE북스 MO(1.23%), Google 자연검색 PC(0.69%)도 효율이 좋은 채널.
       </div>
     </section>
   `;
 
-  document.querySelectorAll('#p4 th[data-key]').forEach(th=>{
+  document.querySelectorAll('#p2 th[data-key]').forEach(th=>{
     th.addEventListener('click', ()=>{
       const key = th.getAttribute('data-key');
-      if(p4SortKey === key){ p4SortDir *= -1; } else { p4SortKey = key; p4SortDir = -1; }
-      renderP4Table();
+      if(chSortKey === key){ chSortDir *= -1; } else { chSortKey = key; chSortDir = -1; }
+      renderChannelTable();
     });
   });
-  renderP4Table();
+  renderChannelTable();
 
-  const qualified = chDev.filter(r=>r.sessions>=50).slice().sort((a,b)=>b.conv_rate-a.conv_rate).slice(0,12);
+  new Chart(document.getElementById('chartTopSessions'), {
+    type: 'bar',
+    data: {
+      labels: topBySessions.map(r=>`${r.channel} (${r.device})`),
+      datasets: [{ data: topBySessions.map(r=>r.sessions), backgroundColor: topBySessions.map(r=>r.device==='PC'?COLORS.pc:COLORS.mo), borderRadius:4 }]
+    },
+    options: {
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{ x:{grid:{color:COLORS.rule}}, y:{grid:{display:false}} }
+    }
+  });
+
   new Chart(document.getElementById('chartConvRate'), {
     type: 'bar',
     data: {
@@ -974,7 +823,56 @@ function renderPanel4(){
 }
 
 // ===================================================================
-// PANEL 5 — Raw 데이터 테이블
+// PANEL 3 — 실행 제안 (흩어진 인사이트를 할 일 목록으로 정리)
+// ===================================================================
+function renderPanel3(){
+  const el = document.getElementById('p3');
+
+  const directMoSessions = traffic.filter(t=>t.channel==='Direct'&&t.device==='MO').reduce((a,b)=>a+b.sessions,0);
+  const directShare = moStat.sessions ? (directMoSessions / moStat.sessions * 100) : 0;
+  const bsaMo = chDev.find(r=>r.channel==='Naver BSA' && r.device==='MO');
+  const bsaPc = chDev.find(r=>r.channel==='Naver BSA' && r.device==='PC');
+  const googleMo = chDev.find(r=>r.channel==='Google 자연검색' && r.device==='MO');
+  const juniorPc = chDev.find(r=>r.channel==='주니어랩(B2B)' && r.device==='PC');
+
+  el.innerHTML = `
+    <section class="block">
+      <div class="block-head"><h2 class="block-title">이번 주에 <span class="hl coral">확인해볼 것</span></h2></div>
+      <p class="block-note">데이터에서 바로 보이는 이슈와 기회를 우선순위 순으로 정리했습니다.</p>
+
+      <div class="action-card urgent">
+        <div class="action-tag">긴급</div>
+        <div class="action-title">MO 다이렉트 유입 ${directShare.toFixed(1)}% — 출처 추적이 안 되고 있음</div>
+        <p class="action-desc">모바일 세션 ${fmtNum(moStat.sessions)}건 중 ${fmtNum(directMoSessions)}건이 '다이렉트'로 잡힙니다. 문자 링크, 앱 내 브라우저 접속 등이 이렇게 잡히는 경우가 많아 실제 어떤 채널이 효과 있는지 알기 어렵습니다.</p>
+        <p class="action-todo">→ 문자·카카오·이메일 등 모든 마케팅 링크에 UTM 파라미터 부착</p>
+      </div>
+
+      <div class="action-card opportunity">
+        <div class="action-tag">기회</div>
+        <div class="action-title">네이버 BSA, 모바일 전환이 PC보다 6배 이상 높음</div>
+        <p class="action-desc">BSA 전환율 — MO ${bsaMo?bsaMo.conv_rate.toFixed(3):'-'}% vs PC ${bsaPc?bsaPc.conv_rate.toFixed(3):'-'}%. 모바일에서 이미 잘 통하는 키워드가 있다는 뜻입니다.</p>
+        <p class="action-todo">→ MO 전환 높은 키워드 위주로 예산 재배분, 구매 시간대 분석해서 노출 스케줄 조정</p>
+      </div>
+
+      <div class="action-card watch">
+        <div class="action-tag">점검 필요</div>
+        <div class="action-title">구글 자연검색 MO — 세션 ${googleMo?fmtNum(googleMo.sessions):'-'}건인데 구매 0건</div>
+        <p class="action-desc">전체 세션 중 2위 규모(17.62%)의 채널인데 구매로 전혀 이어지지 않고 있습니다. 대부분 부가자료(eBook/오디오북) 다운로드 목적의 방문으로 추정됩니다.</p>
+        <p class="action-todo">→ 방문 목적과 구매 유도 CTA가 맞는지 확인, 필요 시 다운로드 후 구매 유도 흐름 보강</p>
+      </div>
+
+      <div class="action-card opportunity">
+        <div class="action-tag">참고</div>
+        <div class="action-title">주니어랩(B2B)이 세션당 수익이 가장 높은 채널</div>
+        <p class="action-desc">세션은 ${juniorPc?fmtNum(juniorPc.sessions):'-'}건뿐이지만 전환율 ${juniorPc?juniorPc.conv_rate.toFixed(2):'-'}%, 세션당 수익 ${juniorPc?fmtWon(juniorPc.rev_per_session):'-'}로 압도적입니다.</p>
+        <p class="action-todo">→ B2B 채널에 대한 별도 예산/캠페인 검토 가치 있음</p>
+      </div>
+    </section>
+  `;
+}
+
+// ===================================================================
+// PANEL 4 — Raw 데이터 테이블
 // ===================================================================
 let rawMode = 'traffic';
 let rawDeviceFilter = 'ALL';
@@ -982,11 +880,12 @@ let rawSearch = '';
 let rawSortKey = null;
 let rawSortDir = -1;
 
-function renderPanel5(){
-  const el = document.getElementById('p5');
+function renderPanel4(){
+  const el = document.getElementById('p4');
   el.innerHTML = `
     <section class="block">
       <div class="block-head"><h2 class="block-title">Raw 데이터 <span class="hl yellow">탐색</span></h2></div>
+      <p class="block-note">위 화면들의 원본 데이터입니다. 특정 거래나 세션을 직접 찾아볼 때만 참고하세요.</p>
       <div class="filter-bar">
         <div class="seg" id="modeSeg">
           <button data-mode="traffic" class="active">유입 raw (${traffic.length})</button>
@@ -1109,7 +1008,6 @@ safeRender('p1', renderPanel1);
 safeRender('p2', renderPanel2);
 safeRender('p3', renderPanel3);
 safeRender('p4', renderPanel4);
-safeRender('p5', renderPanel5);
 setStatus('stale', '고정 데이터 표시 중 (실시간 동기화 시도 중…)');
 
 // Kick off live data load, then poll on an interval.
