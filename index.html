@@ -323,29 +323,57 @@ function categorize(source){
   return '기타';
 }
 
+function findHeaderRow(rows, mustContain){
+  for(let i=0; i<Math.min(rows.length, 10); i++){
+    const r = rows[i] || [];
+    const joined = r.join('|');
+    if(mustContain.every(k => joined.includes(k))) return i;
+  }
+  return -1;
+}
+function colIndex(headerRow, name){
+  return headerRow.findIndex(h => (h||'').trim() === name);
+}
+
 function buildTrafficRows(rows){
-  // row[0] is blank leading column in this sheet layout; data starts at row index 2 (0-indexed)
+  const headerIdx = findHeaderRow(rows, ['세션 소스/매체', '세션수']);
+  if(headerIdx === -1) return [];
+  const h = rows[headerIdx];
+  const col = {
+    device: colIndex(h, '유입기기'),
+    source: colIndex(h, '세션 소스/매체'),
+    sessions: colIndex(h, '세션수'),
+    engagedSessions: colIndex(h, '참여 세션수'),
+    engageRate: colIndex(h, '참여율'),
+    avgTime: colIndex(h, '세션당 평균 참여 시간'),
+    evPerSession: colIndex(h, '세션당 이벤트'),
+    eventCount: colIndex(h, '이벤트 수'),
+    keyEvent: colIndex(h, '주요 이벤트'),
+    keyEventRate: colIndex(h, '세션 주요 이벤트 비율'),
+    revenue: colIndex(h, '총수익')
+  };
   const out = [];
-  for(let i=2; i<rows.length; i++){
+  for(let i=headerIdx+1; i<rows.length; i++){
     const r = rows[i];
-    if(!r || r.length < 13 || !String(r[1]||'').trim()) continue;
-    const [ , idx, device, source, sessions, engagedSessions, engageRate, avgTime, evPerSession, eventCount, keyEvent, keyEventRate, revenue ] = r;
-    if(!device || !source) continue;
+    if(!r) continue;
+    const device = col.device>=0 ? r[col.device] : '';
+    const source = col.source>=0 ? r[col.source] : '';
+    if(!String(device||'').trim() || !String(source||'').trim()) continue;
     out.push({
-      idx: parseInt(idx,10) || 0,
-      device: (device||'').trim(),
-      source: (source||'').trim(),
-      sessions: parseNum(sessions),
-      sessions_pct: parsePct(sessions),
-      engaged_sessions: parseNum(engagedSessions),
-      engage_rate: (engageRate||'').trim().replace('%',''),
-      avg_time: (avgTime||'').trim(),
-      events_per_session: (evPerSession||'').trim(),
-      event_count: parseNum(eventCount),
-      key_event: keyEvent ? parseNum(keyEvent) : 0,
-      key_event_rate: (keyEventRate||'').trim().replace('%',''),
-      revenue: parseNum(revenue),
-      revenue_pct: parsePct(revenue),
+      idx: i - headerIdx,
+      device: String(device).trim(),
+      source: String(source).trim(),
+      sessions: parseNum(r[col.sessions]),
+      sessions_pct: parsePct(r[col.sessions]),
+      engaged_sessions: parseNum(r[col.engagedSessions]),
+      engage_rate: String(r[col.engageRate]||'').trim().replace('%',''),
+      avg_time: String(r[col.avgTime]||'').trim(),
+      events_per_session: String(r[col.evPerSession]||'').trim(),
+      event_count: parseNum(r[col.eventCount]),
+      key_event: parseNum(r[col.keyEvent]),
+      key_event_rate: String(r[col.keyEventRate]||'').trim().replace('%',''),
+      revenue: parseNum(r[col.revenue]),
+      revenue_pct: parsePct(r[col.revenue]),
       channel: categorize(source)
     });
   }
@@ -353,19 +381,29 @@ function buildTrafficRows(rows){
 }
 
 function buildPurchaseRows(rows){
+  const headerIdx = findHeaderRow(rows, ['거래 ID', '구매 수익']);
+  if(headerIdx === -1) return [];
+  const h = rows[headerIdx];
+  const col = {
+    txnId: colIndex(h, '거래 ID'),
+    source: colIndex(h, '첫 사용자 소스/매체'),
+    revenue: colIndex(h, '구매 수익'),
+    device: colIndex(h, '거래기기')
+  };
   const out = [];
-  for(let i=2; i<rows.length; i++){
+  for(let i=headerIdx+1; i<rows.length; i++){
     const r = rows[i];
-    if(!r || r.length < 7 || !String(r[1]||'').trim()) continue;
-    const [ , idx, txnId, source, ecommerce, revenue, device ] = r;
-    if(!device || !source) continue;
+    if(!r) continue;
+    const device = col.device>=0 ? r[col.device] : '';
+    const source = col.source>=0 ? r[col.source] : '';
+    if(!String(device||'').trim() || !String(source||'').trim()) continue;
     out.push({
-      idx: parseInt(idx,10) || 0,
-      txn_id: (txnId||'').trim(),
-      source: (source||'').trim(),
-      device: (device||'').trim(),
-      revenue: parseNum(revenue),
-      revenue_pct: parsePct(revenue),
+      idx: i - headerIdx,
+      txn_id: String(r[col.txnId]||'').trim(),
+      source: String(source).trim(),
+      device: String(device).trim(),
+      revenue: parseNum(r[col.revenue]),
+      revenue_pct: parsePct(r[col.revenue]),
       channel: categorize(source)
     });
   }
