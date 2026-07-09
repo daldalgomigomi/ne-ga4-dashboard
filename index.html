@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GA4 마케팅 성과 대시보드 · 6/9–6/28</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#F5F6F8;
+  --surface:#FFFFFF;
+  --border:#E5E7EB;
+  --border-strong:#D1D5DB;
+  --ink:#111827;
+  --ink-soft:#6B7280;
+  --ink-faint:#9CA3AF;
+  --accent:#3D5AFE;
+  --accent-soft:#EEF1FF;
+  --pc:#3D5AFE;
+  --mo:#0EA5A5;
+  --mo-soft:#E6F7F5;
+  --warn:#F5A623;
+  --danger:#E5484D;
+  --danger-soft:#FDECEC;
+  --sidebar-bg:#111827;
+  --sidebar-text:#9CA3AF;
+  --sidebar-text-active:#FFFFFF;
+  --shadow-sm: 0 1px 2px rgba(17,24,39,0.04);
+  --shadow-md: 0 4px 12px -4px rgba(17,24,39,0.08), 0 1px 3px rgba(17,24,39,0.04);
+  --radius:10px;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  background:var(--bg);
+  color:var(--ink);
+  font-family:'Pretendard', -apple-system, sans-serif;
+  -webkit-font-smoothing:antialiased;
+  min-height:100vh;
+}
+.mono{font-family:'IBM Plex Mono', monospace;}
+
+/* ---------- Signature accent: colored key-metric tick ---------- */
+.tick{
+  display:inline-block;
+  width:6px; height:6px;
+  border-radius:50%;
+  margin-right:8px;
+  background:var(--accent);
+  vertical-align:middle;
+}
+
+/* ---------- Shell: sidebar + content ---------- */
+.shell{display:flex; min-height:100vh;}
+.sidebar{
+  width:236px;
+  background:var(--sidebar-bg);
+  color:var(--sidebar-text);
+  flex-shrink:0;
+  padding:26px 18px;
+  position:sticky;
+  top:0;
+  height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+.brand{padding:2px 8px 22px; border-bottom:1px solid rgba(255,255,255,0.08); margin-bottom:18px;}
+.brand-eyebrow{font-family:'IBM Plex Mono',monospace; font-size:10.5px; letter-spacing:.1em; color:#6B7280; text-transform:uppercase; margin:0 0 6px;}
+.brand-title{font-size:16.5px; font-weight:700; color:#fff; margin:0; line-height:1.4;}
+.brand-sub{font-size:12px; color:#6B7280; margin:6px 0 0;}
+
+nav.sidenav{display:flex; flex-direction:column; gap:2px;}
+.tab-btn{
+  display:flex; align-items:center; gap:10px;
+  font-family:'Pretendard'; font-weight:500; font-size:14px;
+  padding:10px 12px;
+  background:transparent; border:none; border-radius:8px;
+  cursor:pointer; color:var(--sidebar-text);
+  text-align:left; width:100%;
+  transition:background .15s ease, color .15s ease;
+}
+.tab-btn:hover{background:rgba(255,255,255,0.06); color:#fff;}
+.tab-btn.active{background:var(--accent); color:#fff;}
+.tab-btn .num{
+  font-family:'IBM Plex Mono',monospace; font-size:10.5px;
+  width:20px; height:20px; border-radius:5px;
+  display:flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,0.08); color:inherit; flex-shrink:0;
+}
+.tab-btn.active .num{background:rgba(255,255,255,0.25);}
+
+.sidebar-foot{margin-top:auto; padding-top:16px; border-top:1px solid rgba(255,255,255,0.08); font-size:11px; font-family:'IBM Plex Mono',monospace; color:#4B5563; line-height:1.6;}
+
+.content{flex:1; min-width:0; padding:32px 36px 60px;}
+.page-head{margin-bottom:24px; display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:12px;}
+h1.page-title{font-size:22px; font-weight:700; margin:0 0 4px; color:var(--ink);}
+p.page-sub{font-size:13.5px; color:var(--ink-soft); margin:0; max-width:560px;}
+.period-badge{
+  font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink);
+  background:var(--surface); border:1px solid var(--border-strong); border-radius:8px;
+  padding:8px 14px; white-space:nowrap; box-shadow:var(--shadow-sm);
+}
+.sync-status{
+  display:flex; align-items:center; gap:8px;
+  font-family:'IBM Plex Mono',monospace; font-size:12px;
+  background:var(--surface); border:1px solid var(--border-strong); border-radius:8px;
+  padding:8px 12px; white-space:nowrap; box-shadow:var(--shadow-sm);
+}
+.sync-status .dot{width:7px; height:7px; border-radius:50%; background:var(--ink-faint); flex-shrink:0;}
+.sync-status.loading .dot{background:var(--warn); animation:pulse 1s ease-in-out infinite;}
+.sync-status.ok .dot{background:var(--mo);}
+.sync-status.error .dot{background:var(--danger);}
+.sync-status .sync-text{color:var(--ink-soft);}
+.sync-status.error .sync-text{color:var(--danger);}
+@keyframes pulse{0%,100%{opacity:1;} 50%{opacity:.35;}}
+#refreshBtn{
+  font-family:'Pretendard'; font-weight:600; font-size:12px; color:var(--accent);
+  background:none; border:none; cursor:pointer; padding:0 0 0 6px; border-left:1px solid var(--border);
+  margin-left:2px;
+}
+#refreshBtn:hover{text-decoration:underline;}
+
+.panel{display:none;}
+.panel.active{display:block; animation:fadeIn .25s ease;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+
+section.block{margin-bottom:32px;}
+section.block:last-child{margin-bottom:0;}
+.block-head{display:flex; align-items:center; gap:10px; margin-bottom:14px;}
+h2.block-title{font-size:15.5px; font-weight:700; margin:0; color:var(--ink);}
+p.block-note{color:var(--ink-soft); font-size:13px; margin:-6px 0 16px;}
+
+/* KPI cards */
+.kpi-grid{display:grid; grid-template-columns:repeat(4, 1fr); gap:14px;}
+.kpi-card{
+  border:1px solid var(--border); border-radius:var(--radius);
+  padding:18px 18px 16px; background:var(--surface); box-shadow:var(--shadow-sm);
+  position:relative;
+}
+.kpi-label{font-size:12.5px; color:var(--ink-soft); font-weight:500; margin-bottom:10px; display:flex; align-items:center;}
+.kpi-value{font-family:'IBM Plex Mono', monospace; font-weight:600; font-size:25px; color:var(--ink); letter-spacing:-.01em;}
+.kpi-sub{font-size:12px; color:var(--ink-faint); margin-top:6px;}
+.kpi-card.stamp::after{
+  content:attr(data-stamp);
+  position:absolute; top:14px; right:14px;
+  font-family:'IBM Plex Mono',monospace; font-size:10px; font-weight:600;
+  color:var(--mo); background:var(--mo-soft); border-radius:20px; padding:3px 9px;
+}
+
+.grid-2{display:grid; grid-template-columns:1.1fr .9fr; gap:20px;}
+.grid-2.even{grid-template-columns:1fr 1fr;}
+@media (max-width:900px){
+  .grid-2, .grid-2.even{grid-template-columns:1fr;}
+  .kpi-grid{grid-template-columns:repeat(2,1fr);}
+  .shell{flex-direction:column;}
+  .sidebar{width:100%; height:auto; position:relative;}
+}
+
+.chart-box{border:1px solid var(--border); border-radius:var(--radius); padding:18px 18px 10px; background:var(--surface); box-shadow:var(--shadow-sm);}
+.chart-box .chart-title{font-size:12.5px; font-weight:600; color:var(--ink-soft); margin-bottom:12px;}
+.chart-canvas-wrap{position:relative; height:270px;}
+.chart-canvas-wrap.tall{height:340px;}
+.chart-canvas-wrap.short{height:200px;}
+
+/* Insight callouts */
+.callout{
+  border:1px solid var(--border); border-left:3px solid var(--danger);
+  background:var(--danger-soft); border-radius:8px; padding:13px 15px;
+  font-size:13px; line-height:1.65; color:var(--ink); margin-top:14px;
+}
+.callout.mint{border-left-color:var(--mo); background:var(--mo-soft);}
+.callout.blue{border-left-color:var(--accent); background:var(--accent-soft);}
+.callout strong{font-weight:700;}
+.callout ul{margin:6px 0 0; padding-left:18px;}
+.callout li{margin-bottom:4px;}
+
+/* Tables */
+table.data-table{width:100%; border-collapse:collapse; font-size:13.5px; background:var(--surface);}
+table.data-table th{
+  text-align:left; font-family:'IBM Plex Mono',monospace; font-size:11px;
+  text-transform:uppercase; letter-spacing:.03em; color:var(--ink-soft);
+  background:#FAFAFB; border-bottom:1px solid var(--border); padding:10px 12px; white-space:nowrap;
+  cursor:pointer; user-select:none; position:sticky; top:0;
+}
+table.data-table th:hover{color:var(--ink);}
+table.data-table th .arrow{font-size:10px; opacity:.5; margin-left:3px;}
+table.data-table td{padding:9px 12px; border-bottom:1px solid var(--border); color:var(--ink);}
+table.data-table tbody tr:hover{background:#FAFAFB;}
+table.data-table td.num, table.data-table th.num{font-family:'IBM Plex Mono', monospace; text-align:right;}
+.badge{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:5px;}
+.badge.pc{background:var(--accent-soft); color:var(--pc);}
+.badge.mo{background:var(--mo-soft); color:var(--mo);}
+
+.filter-bar{display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; align-items:center;}
+.filter-bar input[type=text]{
+  font-family:'Pretendard'; font-size:13.5px; padding:9px 12px;
+  border:1px solid var(--border-strong); border-radius:8px; min-width:220px; background:var(--surface);
+}
+.filter-bar input[type=text]:focus{outline:2px solid var(--accent); outline-offset:1px; border-color:var(--accent);}
+.seg{display:flex; border:1px solid var(--border-strong); border-radius:8px; overflow:hidden; background:var(--surface);}
+.seg button{
+  font-family:'Pretendard'; font-weight:500; font-size:13px; padding:8px 14px;
+  background:transparent; border:none; cursor:pointer; color:var(--ink-soft); border-right:1px solid var(--border-strong);
+}
+.seg button:last-child{border-right:none;}
+.seg button.active{background:var(--ink); color:#fff;}
+.table-scroll{max-height:520px; overflow:auto; border:1px solid var(--border); border-radius:var(--radius);}
+.row-count{font-size:12px; color:var(--ink-faint); margin-top:8px;}
+
+@media (max-width:600px){
+  .content{padding:20px 16px 40px;}
+  .kpi-grid{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <aside class="sidebar">
+    <div class="brand">
+      <p class="brand-eyebrow">NE능률 · 디지털마케팅팀</p>
+      <p class="brand-title">GA4 성과 대시보드</p>
+      <p class="brand-sub">유입 &amp; 전자상거래 구매 분석</p>
+    </div>
+    <nav class="sidenav" id="tabNav">
+      <button class="tab-btn active" data-panel="p1"><span class="num">01</span>종합 현황</button>
+      <button class="tab-btn" data-panel="p2"><span class="num">02</span>유입 채널 분석</button>
+      <button class="tab-btn" data-panel="p3"><span class="num">03</span>구매 전환 분석</button>
+      <button class="tab-btn" data-panel="p4"><span class="num">04</span>채널×기기 성과표</button>
+      <button class="tab-btn" data-panel="p5"><span class="num">05</span>Raw 데이터</button>
+    </nav>
+    <div class="sidebar-foot">DATA<br>유입 raw · 구매 raw<br>2026.06.09–06.28</div>
+  </aside>
+
+  <div class="content">
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">유입 &amp; 전자상거래 구매 성과 리포트</h1>
+        <p class="page-sub">전자상거래 연동 이후 20일 구간의 세션·채널·구매 raw 데이터를 기반으로 PC/MO 성과와 채널별 전환 효율을 정리했습니다.</p>
+      </div>
+      <div class="period-badge">2026.06.09 – 06.28 (20일)</div>
+      <div class="sync-status loading" id="syncStatus"><span class="dot"></span><span class="sync-text">데이터 불러오는 중…</span><button id="refreshBtn" title="지금 새로고침">↻ 새로고침</button></div>
+    </div>
+
+    <main>
+      <div class="panel active" id="p1"></div>
+      <div class="panel" id="p2"></div>
+      <div class="panel" id="p3"></div>
+      <div class="panel" id="p4"></div>
+      <div class="panel" id="p5"></div>
+    </main>
+  </div>
+</div>
+
+
+<script>
+
+// ===== Live data source (published Google Sheet CSV) =====
+const SHEET_URLS = {
+  purchase: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSOuhEmzE_CaZCQi_aVC83X3rbcpxODJwFZkHlAc9KrfOO3SQbpPrNEBSwwLQmLhIJ3sxmMmAUePonk/pub?gid=0&single=true&output=csv',
+  traffic: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSOuhEmzE_CaZCQi_aVC83X3rbcpxODJwFZkHlAc9KrfOO3SQbpPrNEBSwwLQmLhIJ3sxmMmAUePonk/pub?gid=654212895&single=true&output=csv'
+};
+const AUTO_REFRESH_MS = 5 * 60 * 1000; // 5 minutes
+
+// ===== CSV parsing (handles quoted fields with embedded commas, e.g. "₩3,100 (0.31%)") =====
+function parseCSV(text){
+  const rows = [];
+  let row = [], field = '', inQuotes = false;
+  for(let i=0; i<text.length; i++){
+    const c = text[i];
+    if(inQuotes){
+      if(c === '"'){
+        if(text[i+1] === '"'){ field += '"'; i++; }
+        else inQuotes = false;
+      } else field += c;
+    } else {
+      if(c === '"') inQuotes = true;
+      else if(c === ','){ row.push(field); field = ''; }
+      else if(c === '\n'){ row.push(field); rows.push(row); row = []; field = ''; }
+      else if(c === '\r'){ /* skip */ }
+      else field += c;
+    }
+  }
+  if(field.length || row.length){ row.push(field); rows.push(row); }
+  return rows;
+}
+
+function parseNum(s){
+  if(s == null) return 0;
+  s = String(s).trim();
+  if(s === '' || s === '-') return 0;
+  const m = s.match(/^[₩]?([\d,]+)/);
+  return m ? parseInt(m[1].replace(/,/g, ''), 10) : 0;
+}
+function parsePct(s){
+  if(s == null) return 0;
+  const m = String(s).match(/\(([\d.]+)%\)/) || String(s).match(/([\d.]+)%/);
+  return m ? parseFloat(m[1]) : 0;
+}
+
+function categorize(source){
+  const s = (source || '').toLowerCase();
+  if(s.includes('direct')) return 'Direct';
+  if(s.includes('naver / bsa')) return 'Naver BSA';
+  if(s.includes('naver') && s.includes('organic')) return 'Naver 자연검색';
+  if(s.includes('naver')) return 'Naver 기타(카페/블로그 등)';
+  if(s.includes('google') && s.includes('organic')) return 'Google 자연검색';
+  if(s.includes('google')) return 'Google 기타';
+  if(s.includes('members.neungyule')) return '능률 통합회원';
+  if(s.includes('netutor.co.kr')) return 'NE튜터';
+  if(s.includes('nebooks')) return 'NE북스';
+  if(s.includes('lms.nelab')) return '주니어랩(B2B)';
+  if(s.includes('kakao')) return '카카오';
+  if(s.includes('instagram')) return '인스타그램';
+  if(s.includes('chatgpt') || s.includes('gemini') || s.includes('ai-assistant') || s.includes('copilot')) return 'AI 검색/어시스턴트';
+  if(s.includes('bing')) return 'Bing';
+  if(s.includes('yahoo')) return 'Yahoo';
+  if(s.includes('daum')) return 'Daum';
+  if(s.includes('neungyule.com')) return '능률 기타';
+  return '기타';
+}
+
+function buildTrafficRows(rows){
+  // row[0] is blank leading column in this sheet layout; data starts at row index 2 (0-indexed)
+  const out = [];
+  for(let i=2; i<rows.length; i++){
+    const r = rows[i];
+    if(!r || r.length < 13 || !String(r[1]||'').trim()) continue;
+    const [ , idx, device, source, sessions, engagedSessions, engageRate, avgTime, evPerSession, eventCount, keyEvent, keyEventRate, revenue ] = r;
+    if(!device || !source) continue;
+    out.push({
+      idx: parseInt(idx,10) || 0,
+      device: (device||'').trim(),
+      source: (source||'').trim(),
+      sessions: parseNum(sessions),
+      sessions_pct: parsePct(sessions),
+      engaged_sessions: parseNum(engagedSessions),
+      engage_rate: (engageRate||'').trim().replace('%',''),
+      avg_time: (avgTime||'').trim(),
+      events_per_session: (evPerSession||'').trim(),
+      event_count: parseNum(eventCount),
+      key_event: keyEvent ? parseNum(keyEvent) : 0,
+      key_event_rate: (keyEventRate||'').trim().replace('%',''),
+      revenue: parseNum(revenue),
+      revenue_pct: parsePct(revenue),
+      channel: categorize(source)
+    });
+  }
+  return out;
+}
+
+function buildPurchaseRows(rows){
+  const out = [];
+  for(let i=2; i<rows.length; i++){
+    const r = rows[i];
+    if(!r || r.length < 7 || !String(r[1]||'').trim()) continue;
+    const [ , idx, txnId, source, ecommerce, revenue, device ] = r;
+    if(!device || !source) continue;
+    out.push({
+      idx: parseInt(idx,10) || 0,
+      txn_id: (txnId||'').trim(),
+      source: (source||'').trim(),
+      device: (device||'').trim(),
+      revenue: parseNum(revenue),
+      revenue_pct: parsePct(revenue),
+      channel: categorize(source)
+    });
+  }
+  return out;
+}
+
+function buildChannelDevice(trafficRows, purchaseRows){
+  const sessions = new Map(), txn = new Map(), rev = new Map();
+  const keyOf = (ch, dev) => ch + '§' + dev;
+  trafficRows.forEach(t=>{
+    const k = keyOf(t.channel, t.device);
+    sessions.set(k, (sessions.get(k)||0) + t.sessions);
+  });
+  purchaseRows.forEach(p=>{
+    const k = keyOf(p.channel, p.device);
+    txn.set(k, (txn.get(k)||0) + 1);
+    rev.set(k, (rev.get(k)||0) + p.revenue);
+  });
+  const allKeys = new Set([...sessions.keys(), ...txn.keys()]);
+  const out = [];
+  allKeys.forEach(k=>{
+    const [channel, device] = k.split('§');
+    const s = sessions.get(k) || 0;
+    const t = txn.get(k) || 0;
+    const r = rev.get(k) || 0;
+    out.push({
+      channel, device, sessions: s, txn: t, revenue: r,
+      conv_rate: s ? +(t/s*100).toFixed(3) : 0,
+      rev_per_session: s ? +(r/s).toFixed(1) : 0
+    });
+  });
+  out.sort((a,b)=>b.sessions - a.sessions);
+  return out;
+}
+
+async function fetchSheet(url){
+  const bustUrl = url + (url.includes('?') ? '&' : '?') + '_ts=' + Date.now();
+  const res = await fetch(bustUrl, { cache: 'no-store' });
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  return parseCSV(text);
+}
+
+// ===== Formatting helpers =====
+const fmtWon = n => '₩' + Math.round(n).toLocaleString('ko-KR');
+const fmtNum = n => Math.round(n).toLocaleString('ko-KR');
+const fmtPct = (n, d=1) => (typeof n === 'number' ? n.toFixed(d) : n) + '%';
+
+const COLORS = {
+  pc: '#3D5AFE',
+  mo: '#0EA5A5',
+  yellow: '#F5A623',
+  coral: '#E5484D',
+  ink: '#111827',
+  inkSoft: '#6B7280',
+  rule: '#E5E7EB'
+};
+
+Chart.defaults.font.family = "'Pretendard', sans-serif";
+Chart.defaults.color = COLORS.inkSoft;
+Chart.defaults.font.size = 12.5;
+
+// ===== Aggregate helpers =====
+function sum(arr, fn){ return arr.reduce((a,b)=>a+fn(b), 0); }
+function groupBy(arr, keyFn){
+  const m = new Map();
+  arr.forEach(item=>{
+    const k = keyFn(item);
+    if(!m.has(k)) m.set(k, []);
+    m.get(k).push(item);
+  });
+  return m;
+}
+
+// ===== Reactive data state (populated by fetchAndRenderAll) =====
+let traffic = [];
+let purchase = [];
+let chDev = [];
+
+let totalSessions = 0, totalTrafficRevenue = 0, totalTxn = 0, totalPurchaseRevenue = 0;
+let overallConv = 0, revPerSession = 0;
+let byDeviceSessions = new Map(), byDevicePurchase = new Map();
+let pcStat = {sessions:0, txn:0, revenue:0, aov:0, conv:0};
+let moStat = {sessions:0, txn:0, revenue:0, aov:0, conv:0};
+
+function deviceStat(device){
+  const tArr = byDeviceSessions.get(device) || [];
+  const pArr = byDevicePurchase.get(device) || [];
+  const sessions = sum(tArr, t=>t.sessions);
+  const txn = pArr.length;
+  const revenue = sum(pArr, p=>p.revenue);
+  return { sessions, txn, revenue, aov: txn ? revenue/txn : 0, conv: sessions ? txn/sessions*100 : 0 };
+}
+
+function computeDerived(){
+  totalSessions = sum(traffic, t=>t.sessions);
+  totalTrafficRevenue = sum(traffic, t=>t.revenue);
+  totalTxn = purchase.length;
+  totalPurchaseRevenue = sum(purchase, p=>p.revenue);
+  overallConv = totalSessions ? (totalTxn / totalSessions * 100) : 0;
+  revPerSession = totalSessions ? totalTrafficRevenue / totalSessions : 0;
+  byDeviceSessions = groupBy(traffic, t=>t.device);
+  byDevicePurchase = groupBy(purchase, p=>p.device);
+  pcStat = deviceStat('PC');
+  moStat = deviceStat('MO');
+}
+
+// ===== Status UI (loading / last-updated / refresh button) =====
+function setStatus(mode, text){
+  const el = document.getElementById('syncStatus');
+  if(!el) return;
+  el.className = 'sync-status ' + mode;
+  el.querySelector('.sync-text').textContent = text;
+}
+
+async function loadAllData(isManual){
+  setStatus('loading', isManual ? '새로고침 중…' : '데이터 불러오는 중…');
+  try{
+    const [purchaseRows, trafficRows] = await Promise.all([
+      fetchSheet(SHEET_URLS.purchase),
+      fetchSheet(SHEET_URLS.traffic)
+    ]);
+    const newPurchase = buildPurchaseRows(purchaseRows);
+    const newTraffic = buildTrafficRows(trafficRows);
+    if(newPurchase.length === 0 && newTraffic.length === 0){
+      throw new Error('시트에서 데이터를 찾을 수 없습니다');
+    }
+    purchase = newPurchase;
+    traffic = newTraffic;
+    chDev = buildChannelDevice(traffic, purchase);
+    computeDerived();
+    safeRender('p1', renderPanel1);
+    safeRender('p2', renderPanel2);
+    safeRender('p3', renderPanel3);
+    safeRender('p4', renderPanel4);
+    safeRender('p5', renderPanel5);
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
+    setStatus('ok', '마지막 업데이트 ' + timeStr + ' · 시트 실시간 연동중');
+  } catch(err){
+    console.error('Sheet fetch failed:', err);
+    setStatus('error', '시트 연동 실패 — 잠시 후 다시 시도합니다 (' + err.message + ')');
+  }
+}
+
+
+// ===================================================================
+// PANEL 1 — 종합 현황
+// ===================================================================
+function renderPanel1(){
+  const el = document.getElementById('p1');
+  el.innerHTML = `
+    <section class="block">
+      <div class="block-head"><span class="block-num">§1</span><h2 class="block-title">핵심 지표 <span class="hl yellow">Overview</span></h2></div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">총 세션</div>
+          <div class="kpi-value">${fmtNum(totalSessions)}</div>
+          <div class="kpi-sub">PC ${fmtNum(pcStat.sessions)} · MO ${fmtNum(moStat.sessions)}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">총 거래 수</div>
+          <div class="kpi-value">${fmtNum(totalTxn)}건</div>
+          <div class="kpi-sub">PC ${pcStat.txn}건 · MO ${moStat.txn}건</div>
+        </div>
+        <div class="kpi-card stamp" data-stamp="20일 누적">
+          <div class="kpi-label">총 구매 수익</div>
+          <div class="kpi-value">${fmtWon(totalPurchaseRevenue)}</div>
+          <div class="kpi-sub">PC ${fmtWon(pcStat.revenue)} · MO ${fmtWon(moStat.revenue)}</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">세션 → 구매 전환율</div>
+          <div class="kpi-value">${overallConv.toFixed(3)}%</div>
+          <div class="kpi-sub">세션당 수익 ${fmtWon(revPerSession)}</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><span class="block-num">§2</span><h2 class="block-title">PC <span class="hl blue">vs</span> MO 비교</h2></div>
+      <div class="grid-2 even">
+        <div class="chart-box">
+          <div class="chart-title">세션 · 거래수 · 수익 비교</div>
+          <div class="chart-canvas-wrap"><canvas id="chartPCMO"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">평균 객단가(AOV) &amp; 전환율</div>
+          <table class="data-table" style="margin-top:6px;">
+            <thead><tr><th>구분</th><th class="num">세션</th><th class="num">거래수</th><th class="num">수익</th><th class="num">객단가</th><th class="num">전환율</th></tr></thead>
+            <tbody>
+              <tr><td><span class="badge pc">PC</span></td><td class="num">${fmtNum(pcStat.sessions)}</td><td class="num">${pcStat.txn}</td><td class="num">${fmtWon(pcStat.revenue)}</td><td class="num">${fmtWon(pcStat.aov)}</td><td class="num">${pcStat.conv.toFixed(3)}%</td></tr>
+              <tr><td><span class="badge mo">MO</span></td><td class="num">${fmtNum(moStat.sessions)}</td><td class="num">${moStat.txn}</td><td class="num">${fmtWon(moStat.revenue)}</td><td class="num">${fmtWon(moStat.aov)}</td><td class="num">${moStat.conv.toFixed(3)}%</td></tr>
+            </tbody>
+          </table>
+          <div class="callout">
+            <strong>PC가 MO보다 거래수·객단가 모두 높음.</strong> 주니어랩(B2B, lms.nelab.co.kr) 고액 거래가 PC 쪽에 몰려있는 영향이 큼 — 이 채널을 제외하면 PC/MO 격차는 줄어들 것으로 추정.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><span class="block-num">§3</span><h2 class="block-title">가장 <span class="hl coral">주의가 필요한</span> 지점</h2></div>
+      <div class="grid-2 even">
+        <div class="callout coral">
+          <strong>MO 다이렉트 유입 38.7%</strong> — 세션의 3분의 1 이상이 유입경로 미상으로 잡힘. 문자 링크, 앱 내 브라우저 접속 등이 '다이렉트'로 잡히는 경우가 많음.
+          <ul><li>개선안: 모든 마케팅 채널(문자·카카오·이메일)에 UTM 파라미터 부착</li></ul>
+        </div>
+        <div class="callout mint">
+          <strong>Naver BSA는 MO 전환이 훨씬 우수함</strong> — MO 전환율 0.49% vs PC 0.072%(약 6.8배). MO 위주 키워드·시간대 최적화 여지가 큼.
+          <ul><li>개선안: MO 전환 높은 키워드 재리스트업 + 구매 시간대 기반 노출 스케줄 조정</li></ul>
+        </div>
+      </div>
+    </section>
+  `;
+
+  new Chart(document.getElementById('chartPCMO'), {
+    type: 'bar',
+    data: {
+      labels: ['세션(÷100)', '거래수', '수익(÷1만원)'],
+      datasets: [
+        { label: 'PC', backgroundColor: COLORS.pc, borderRadius: 4, data: [Math.round(pcStat.sessions/100), pcStat.txn, Math.round(pcStat.revenue/10000)] },
+        { label: 'MO', backgroundColor: COLORS.mo, borderRadius: 4, data: [Math.round(moStat.sessions/100), moStat.txn, Math.round(moStat.revenue/10000)] }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins:{legend:{position:'top', labels:{boxWidth:12}}},
+      scales:{ y:{ grid:{color:COLORS.rule}, beginAtZero:true }, x:{ grid:{display:false} } }
+    }
+  });
+}
+
+// ===================================================================
+// PANEL 2 — 유입 채널 분석
+// ===================================================================
+function topChannelsByDevice(device, n=10){
+  const arr = traffic.filter(t=>t.device===device).slice().sort((a,b)=>b.sessions-a.sessions);
+  const top = arr.slice(0, n);
+  const restSessions = sum(arr.slice(n), t=>t.sessions);
+  return { top, restSessions, total: sum(arr, t=>t.sessions) };
+}
+
+function renderPanel2(){
+  const el = document.getElementById('p2');
+  const pcTop = topChannelsByDevice('PC', 8);
+  const moTop = topChannelsByDevice('MO', 8);
+
+  const rowsHtml = (topObj) => topObj.top.map(t => `
+    <tr><td>${t.source}</td><td class="num">${fmtNum(t.sessions)}</td><td class="num">${t.sessions_pct.toFixed(2)}%</td><td class="num">${fmtWon(t.revenue)}</td></tr>
+  `).join('') + (topObj.restSessions > 0 ? `<tr><td style="color:var(--ink-faint)">기타</td><td class="num">${fmtNum(topObj.restSessions)}</td><td class="num">${(topObj.restSessions/topObj.total*100).toFixed(2)}%</td><td class="num">—</td></tr>` : '');
+
+  el.innerHTML = `
+    <section class="block">
+      <div class="block-head"><span class="block-num">§1</span><h2 class="block-title">전체 유입 구조 <span class="hl yellow">PC vs MO</span></h2></div>
+      <div class="grid-2 even">
+        <div class="chart-box">
+          <div class="chart-title">세션 비중</div>
+          <div class="chart-canvas-wrap short"><canvas id="chartSessionShare"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <div class="chart-title">세션당 수익</div>
+          <div class="chart-canvas-wrap short"><canvas id="chartRevPerSession"></canvas></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><span class="block-num">§2</span><h2 class="block-title">PC 채널별 유입 <span class="hl blue">Top 8</span></h2></div>
+      <div class="grid-2">
+        <div class="chart-box">
+          <div class="chart-title">PC 소스/매체별 세션</div>
+          <div class="chart-canvas-wrap tall"><canvas id="chartPCChannels"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <table class="data-table">
+            <thead><tr><th>소스/매체</th><th class="num">세션</th><th class="num">비중</th><th class="num">수익</th></tr></thead>
+            <tbody>${rowsHtml(pcTop)}</tbody>
+          </table>
+        </div>
+      </div>
+      <div class="callout blue">'능률 통합회원사이트' 경유 유입이 PC 세션의 52.6%로 압도적. 통합회원 로그인 흐름을 통해 자사몰로 유입되는 구조가 견고하게 자리잡음.</div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><span class="block-num">§3</span><h2 class="block-title">MO 채널별 유입 <span class="hl mint">Top 8</span></h2></div>
+      <div class="grid-2">
+        <div class="chart-box">
+          <div class="chart-title">MO 소스/매체별 세션</div>
+          <div class="chart-canvas-wrap tall"><canvas id="chartMOChannels"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <table class="data-table">
+            <thead><tr><th>소스/매체</th><th class="num">세션</th><th class="num">비중</th><th class="num">수익</th></tr></thead>
+            <tbody>${rowsHtml(moTop)}</tbody>
+          </table>
+        </div>
+      </div>
+      <div class="callout">MO는 '다이렉트'(38.75%)가 1위, '구글 자연검색'이 17.62%로 PC(1.29%) 대비 압도적으로 높음 — 구글 유입은 대부분 부가자료(eBook/오디오북) 다운로드 목적의 재방문 고객으로 추정.</div>
+    </section>
+  `;
+
+  new Chart(document.getElementById('chartSessionShare'), {
+    type: 'doughnut',
+    data: { labels:['PC','MO'], datasets:[{ data:[pcStat.sessions, moStat.sessions], backgroundColor:[COLORS.pc, COLORS.mo], borderWidth:0 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom'}} }
+  });
+
+  new Chart(document.getElementById('chartRevPerSession'), {
+    type: 'bar',
+    data: { labels:['PC','MO'], datasets:[{ data:[Math.round(pcStat.revenue/pcStat.sessions), Math.round(moStat.revenue/moStat.sessions)], backgroundColor:[COLORS.pc, COLORS.mo], borderRadius:6, barThickness:60 }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>fmtWon(c.parsed.x)}}}, scales:{x:{grid:{color:COLORS.rule}}, y:{grid:{display:false}}} }
+  });
+
+  new Chart(document.getElementById('chartPCChannels'), {
+    type: 'bar',
+    data: { labels: pcTop.top.map(t=>t.source.length>22? t.source.slice(0,22)+'…':t.source), datasets:[{ data: pcTop.top.map(t=>t.sessions), backgroundColor: COLORS.pc, borderRadius:4 }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{color:COLORS.rule}}, y:{grid:{display:false}}} }
+  });
+
+  new Chart(document.getElementById('chartMOChannels'), {
+    type: 'bar',
+    data: { labels: moTop.top.map(t=>t.source.length>22? t.source.slice(0,22)+'…':t.source), datasets:[{ data: moTop.top.map(t=>t.sessions), backgroundColor: COLORS.mo, borderRadius:4 }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{grid:{color:COLORS.rule}}, y:{grid:{display:false}}} }
+  });
+}
+
+// ===================================================================
+// PANEL 3 — 구매 전환 분석
+// ===================================================================
+function renderPanel3(){
+  const el = document.getElementById('p3');
+
+  const bySource = groupBy(purchase, p=>p.source);
+  let sourceRows = Array.from(bySource.entries()).map(([source, arr])=>({
+    source, txn: arr.length, revenue: sum(arr, p=>p.revenue), device: arr[0].device
+  })).sort((a,b)=>b.revenue-a.revenue).slice(0,10);
+
+  const byBrandChannel = groupBy(purchase, p=>p.channel);
+  const brandRows = Array.from(byBrandChannel.entries()).map(([ch,arr])=>({ channel: ch, txn: arr.length, revenue: sum(arr,p=>p.revenue) })).sort((a,b)=>b.txn-a.txn);
+
+  el.innerHTML = `
+    <section class="block">
+      <div class="block-head"><span class="block-num">§1</span><h2 class="block-title">구매유저 첫 유입 소스 <span class="hl yellow">Top 10</span></h2></div>
+      <div class="grid-2">
+        <div class="chart-box">
+          <div class="chart-title">거래수 기준 상위 소스/매체 (수익 기준 정렬)</div>
+          <div class="chart-canvas-wrap tall"><canvas id="chartTopSource"></canvas></div>
+        </div>
+        <div class="chart-box">
+          <table class="data-table">
+            <thead><tr><th>소스/매체</th><th>기기</th><th class="num">거래수</th><th class="num">수익</th></tr></thead>
+            <tbody>${sourceRows.map(r=>`<tr><td>${r.source}</td><td><span class="badge ${r.device.toLowerCase()}">${r.device}</span></td><td class="num">${r.txn}</td><td class="num">${fmtWon(r.revenue)}</td></tr>`).join('')}</tbody>
+          </table>
+        </div>
+      </div>
+      <div class="callout mint">'다이렉트 유입'이 거래 21건·수익 ${fmtWon(sum(purchase.filter(p=>p.channel==='Direct'),p=>p.revenue))}으로 1위. lms.nelab.co.kr(주니어랩 B2B)은 3건뿐이지만 건당 객단가가 가장 높아 총수익 기여도가 큼.</div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><span class="block-num">§2</span><h2 class="block-title">채널 그룹별 구매 기여도</h2></div>
+      <div class="chart-box">
+        <div class="chart-title">채널 그룹별 거래수 vs 수익</div>
+        <div class="chart-canvas-wrap tall"><canvas id="chartBrandChannel"></canvas></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><span class="block-num">§3</span><h2 class="block-title">거래 단가 분포</h2></div>
+      <div class="chart-box">
+        <div class="chart-title">거래별 구매 수익 분포 (PC/MO, 낮은→높은 순)</div>
+        <div class="chart-canvas-wrap tall"><canvas id="chartTxnDist"></canvas></div>
+      </div>
+      <div class="callout">MO에는 0원(포인트 100% 사용) 거래가 없고, PC에서만 1건(google/organic) 발생. 고액 거래(₩130,000 이상)는 대부분 PC — B2B·능률 통합회원 채널에 집중.</div>
+    </section>
+  `;
+
+  new Chart(document.getElementById('chartTopSource'), {
+    type: 'bar',
+    data: { labels: sourceRows.map(r=>r.source.length>20? r.source.slice(0,20)+'…':r.source), datasets:[{ data: sourceRows.map(r=>r.revenue), backgroundColor: sourceRows.map(r=>r.device==='PC'?COLORS.pc:COLORS.mo), borderRadius:4 }] },
+    options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>fmtWon(c.parsed.x)}}}, scales:{x:{grid:{color:COLORS.rule}}, y:{grid:{display:false}}} }
+  });
+
+  new Chart(document.getElementById('chartBrandChannel'), {
+    type: 'bar',
+    data: {
+      labels: brandRows.map(r=>r.channel),
+      datasets: [
+        { label:'거래수', backgroundColor: COLORS.yellow, borderRadius:4, data: brandRows.map(r=>r.txn), yAxisID:'y' },
+        { label:'수익(만원)', backgroundColor: COLORS.coral, borderRadius:4, data: brandRows.map(r=>Math.round(r.revenue/10000)), yAxisID:'y1' }
+      ]
+    },
+    options: {
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'top'}},
+      scales:{
+        y:{ position:'left', grid:{color:COLORS.rule}, title:{display:true, text:'거래수', font:{size:11}} },
+        y1:{ position:'right', grid:{display:false}, title:{display:true, text:'수익(만원)', font:{size:11}} },
+        x:{ grid:{display:false} }
+      }
+    }
+  });
+
+  const sortedRevenue = purchase.map(p=>({revenue:p.revenue, device:p.device})).sort((a,b)=>a.revenue-b.revenue);
+  new Chart(document.getElementById('chartTxnDist'), {
+    type: 'bar',
+    data: { labels: sortedRevenue.map((_,i)=>i+1), datasets:[{ data: sortedRevenue.map(r=>r.revenue), backgroundColor: sortedRevenue.map(r=>r.device==='PC'?COLORS.pc:COLORS.mo), borderRadius:2 }] },
+    options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>fmtWon(c.parsed.y)}}}, scales:{ x:{grid:{display:false}, ticks:{display:false}}, y:{grid:{color:COLORS.rule}} } }
+  });
+}
+
+// ===================================================================
+// PANEL 4 — 채널×기기 성과표
+// ===================================================================
+let p4SortKey = 'sessions';
+let p4SortDir = -1;
+
+function renderP4Table(){
+  const tbody = document.getElementById('p4TableBody');
+  const rows = chDev.slice().sort((a,b)=> (a[p4SortKey]-b[p4SortKey]) * p4SortDir);
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r.channel}</td>
+      <td><span class="badge ${r.device.toLowerCase()}">${r.device}</span></td>
+      <td class="num">${fmtNum(r.sessions)}</td>
+      <td class="num">${r.txn}</td>
+      <td class="num">${fmtWon(r.revenue)}</td>
+      <td class="num">${r.conv_rate.toFixed(3)}%</td>
+      <td class="num">${fmtWon(r.rev_per_session)}</td>
+    </tr>
+  `).join('');
+}
+
+function renderPanel4(){
+  const el = document.getElementById('p4');
+  el.innerHTML = `
+    <section class="block">
+      <div class="block-head"><span class="block-num">§1</span><h2 class="block-title">채널 × 기기 <span class="hl coral">전환 성과표</span></h2></div>
+      <p class="block-note">유입 raw와 구매 raw를 채널·기기 기준으로 조인하여 세션당 전환율과 수익 효율을 계산했습니다. 헤더를 클릭하면 정렬됩니다.</p>
+      <div class="table-scroll">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th data-key="channel">채널</th>
+              <th data-key="device">기기</th>
+              <th class="num" data-key="sessions">세션<span class="arrow">▾</span></th>
+              <th class="num" data-key="txn">거래수</th>
+              <th class="num" data-key="revenue">수익</th>
+              <th class="num" data-key="conv_rate">전환율</th>
+              <th class="num" data-key="rev_per_session">세션당 수익</th>
+            </tr>
+          </thead>
+          <tbody id="p4TableBody"></tbody>
+        </table>
+      </div>
+      <div class="callout mint">
+        <strong>전환율 최상위: 주니어랩(B2B) PC 4.29%</strong>, NE북스 MO 1.23%, Google 자연검색 PC 0.69% — 세션 규모는 작지만 전환 효율이 매우 높은 채널.
+        <ul><li>Google 자연검색 MO는 세션 2,027건(전체 2위 규모)임에도 구매 전환 0건 — 대부분 부가자료 다운로드 목적의 방문으로 추정되며, 구매 유도 CTA 보강 검토 필요.</li></ul>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><span class="block-num">§2</span><h2 class="block-title">전환율 <span class="hl blue">상위 채널</span> (세션 50+ 기준)</h2></div>
+      <div class="chart-box">
+        <div class="chart-canvas-wrap tall"><canvas id="chartConvRate"></canvas></div>
+      </div>
+    </section>
+  `;
+
+  document.querySelectorAll('#p4 th[data-key]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.getAttribute('data-key');
+      if(p4SortKey === key){ p4SortDir *= -1; } else { p4SortKey = key; p4SortDir = -1; }
+      renderP4Table();
+    });
+  });
+  renderP4Table();
+
+  const qualified = chDev.filter(r=>r.sessions>=50).slice().sort((a,b)=>b.conv_rate-a.conv_rate).slice(0,12);
+  new Chart(document.getElementById('chartConvRate'), {
+    type: 'bar',
+    data: {
+      labels: qualified.map(r=>`${r.channel} (${r.device})`),
+      datasets: [{ data: qualified.map(r=>r.conv_rate), backgroundColor: qualified.map(r=>r.device==='PC'?COLORS.pc:COLORS.mo), borderRadius:4 }]
+    },
+    options: {
+      indexAxis:'y', responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}, tooltip:{callbacks:{label:(c)=>c.parsed.x.toFixed(3)+'%'}}},
+      scales:{ x:{grid:{color:COLORS.rule}, title:{display:true,text:'전환율(%)',font:{size:11}}}, y:{grid:{display:false}} }
+    }
+  });
+}
+
+// ===================================================================
+// PANEL 5 — Raw 데이터 테이블
+// ===================================================================
+let rawMode = 'traffic';
+let rawDeviceFilter = 'ALL';
+let rawSearch = '';
+let rawSortKey = null;
+let rawSortDir = -1;
+
+function renderPanel5(){
+  const el = document.getElementById('p5');
+  el.innerHTML = `
+    <section class="block">
+      <div class="block-head"><span class="block-num">§1</span><h2 class="block-title">Raw 데이터 <span class="hl yellow">탐색</span></h2></div>
+      <div class="filter-bar">
+        <div class="seg" id="modeSeg">
+          <button data-mode="traffic" class="active">유입 raw (${traffic.length})</button>
+          <button data-mode="purchase">구매 raw (${purchase.length})</button>
+        </div>
+        <div class="seg" id="deviceSeg">
+          <button data-device="ALL" class="active">전체</button>
+          <button data-device="PC">PC</button>
+          <button data-device="MO">MO</button>
+        </div>
+        <input type="text" id="rawSearch" placeholder="소스/매체 검색…">
+      </div>
+      <div class="table-scroll"><table class="data-table" id="rawTable"></table></div>
+      <div class="row-count" id="rawCount"></div>
+    </section>
+  `;
+
+  document.querySelectorAll('#modeSeg button').forEach(b=>b.addEventListener('click', ()=>{
+    rawMode = b.getAttribute('data-mode'); rawSortKey=null;
+    document.querySelectorAll('#modeSeg button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    renderRawTable();
+  }));
+  document.querySelectorAll('#deviceSeg button').forEach(b=>b.addEventListener('click', ()=>{
+    rawDeviceFilter = b.getAttribute('data-device');
+    document.querySelectorAll('#deviceSeg button').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    renderRawTable();
+  }));
+  document.getElementById('rawSearch').addEventListener('input', (e)=>{
+    rawSearch = e.target.value.toLowerCase();
+    renderRawTable();
+  });
+
+  renderRawTable();
+}
+
+function renderRawTable(){
+  const table = document.getElementById('rawTable');
+  const countEl = document.getElementById('rawCount');
+
+  let cols, data;
+  if(rawMode === 'traffic'){
+    cols = [
+      {key:'device', label:'기기'}, {key:'source', label:'소스/매체'},
+      {key:'sessions', label:'세션', num:true}, {key:'sessions_pct', label:'세션비중', num:true, fmt:v=>v.toFixed(2)+'%'},
+      {key:'engage_rate', label:'참여율', num:true, fmt:v=>v+'%'}, {key:'avg_time', label:'평균참여시간'},
+      {key:'event_count', label:'이벤트수', num:true}, {key:'revenue', label:'수익', num:true, fmt:fmtWon}
+    ];
+    data = traffic;
+  } else {
+    cols = [
+      {key:'device', label:'기기'}, {key:'txn_id', label:'거래ID'}, {key:'source', label:'첫 유입 소스/매체'},
+      {key:'revenue', label:'구매수익', num:true, fmt:fmtWon}, {key:'revenue_pct', label:'수익비중', num:true, fmt:v=>v.toFixed(2)+'%'}
+    ];
+    data = purchase;
+  }
+
+  let filtered = data.filter(d => (rawDeviceFilter==='ALL' || d.device===rawDeviceFilter) && (rawSearch==='' || d.source.toLowerCase().includes(rawSearch)));
+
+  if(rawSortKey){
+    filtered = filtered.slice().sort((a,b)=>{
+      const av=a[rawSortKey], bv=b[rawSortKey];
+      if(typeof av === 'number') return (av-bv)*rawSortDir;
+      return String(av).localeCompare(String(bv)) * rawSortDir;
+    });
+  }
+
+  const thead = `<thead><tr>${cols.map(c=>`<th class="${c.num?'num':''}" data-key="${c.key}">${c.label}${rawSortKey===c.key?(rawSortDir===1?' ▴':' ▾'):''}</th>`).join('')}</tr></thead>`;
+  const tbody = `<tbody>${filtered.map(row=>`<tr>${cols.map(c=>{
+    let v = row[c.key];
+    if(c.key==='device'){ return `<td><span class="badge ${v.toLowerCase()}">${v}</span></td>`; }
+    if(c.fmt) v = c.fmt(v);
+    else if(typeof v === 'number') v = fmtNum(v);
+    return `<td class="${c.num?'num':''}">${v}</td>`;
+  }).join('')}</tr>`).join('')}</tbody>`;
+
+  table.innerHTML = thead + tbody;
+  countEl.textContent = `${filtered.length}개 행 표시 중 (전체 ${data.length}개)`;
+
+  table.querySelectorAll('th[data-key]').forEach(th=>{
+    th.addEventListener('click', ()=>{
+      const key = th.getAttribute('data-key');
+      if(rawSortKey === key){ rawSortDir *= -1; } else { rawSortKey = key; rawSortDir = -1; }
+      renderRawTable();
+    });
+  });
+}
+
+// ===================================================================
+// Tab navigation — wire this up FIRST so tab switching always works
+// even if a chart render below throws.
+// ===================================================================
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.getAttribute('data-panel')).classList.add('active');
+  });
+});
+
+// ===================================================================
+// Init — each panel wrapped in try/catch so one failure doesn't blank
+// out the rest of the dashboard.
+// ===================================================================
+function safeRender(name, fn){
+  try { fn(); }
+  catch(e){
+    console.error('Render failed:', name, e);
+    const el = document.getElementById(name);
+    if (el) el.innerHTML = '<p style="color:#E5484D; font-family:monospace; font-size:13px; padding:20px;">이 탭을 불러오는 중 오류가 발생했습니다: ' + (e && e.message ? e.message : e) + '</p>';
+  }
+}
+
+// Kick off live data load, then poll on an interval.
+loadAllData(false);
+setInterval(() => loadAllData(false), AUTO_REFRESH_MS);
+
+// Manual refresh button
+document.addEventListener('click', (e)=>{
+  if(e.target && e.target.id === 'refreshBtn'){
+    loadAllData(true);
+  }
+});
+
+</script>
+</body>
+</html>
