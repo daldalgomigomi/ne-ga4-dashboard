@@ -309,10 +309,12 @@ const FALLBACK_DATA = {"traffic": [{"idx": 1, "device": "MO", "source": "(direct
 const SHEET_ID = '1RyG1jpXxhslu66uf5XmLz6PFVtu-dUDK40extGvkCU0';
 const SHEET_URLS = {
   purchase: {
+    gviz: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=0`,
     primary: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=0`,
     fallback: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSOuhEmzE_CaZCQi_aVC83X3rbcpxODJwFZkHlAc9KrfOO3SQbpPrNEBSwwLQmLhIJ3sxmMmAUePonk/pub?gid=0&single=true&output=csv'
   },
   traffic: {
+    gviz: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=654212895`,
     primary: `https://docs.google.com/spreadsheets/d/${SHEET_ID}/export?format=csv&gid=654212895`,
     fallback: 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSOuhEmzE_CaZCQi_aVC83X3rbcpxODJwFZkHlAc9KrfOO3SQbpPrNEBSwwLQmLhIJ3sxmMmAUePonk/pub?gid=654212895&single=true&output=csv'
   }
@@ -558,17 +560,27 @@ async function fetchOnce(url){
 
 // Tries the direct export URL first; if that fails (network error, HTML
 // response, non-OK status), falls back to the "publish to web" CSV URL.
-async function fetchSheetRaw(urls){
-  try {
-    return await fetchOnce(urls.primary);
-  } catch(primaryErr){
-    console.warn('기본 URL 실패, 대체 URL로 재시도:', primaryErr.message);
+let LAST_FETCH_METHOD = { purchase: '(아직 없음)', traffic: '(아직 없음)' };
+
+async function fetchSheetRaw(urls, label){
+  const attempts = [
+    { name: 'gviz', url: urls.gviz },
+    { name: 'export', url: urls.primary },
+    { name: 'pub', url: urls.fallback }
+  ];
+  const errors = [];
+  for(const attempt of attempts){
     try {
-      return await fetchOnce(urls.fallback);
-    } catch(fallbackErr){
-      throw new Error('두 방식 모두 실패 (기본: ' + primaryErr.message + ' / 대체: ' + fallbackErr.message + ')');
+      const text = await fetchOnce(attempt.url);
+      if(label) LAST_FETCH_METHOD[label] = attempt.name;
+      return text;
+    } catch(err){
+      console.warn(attempt.name + ' 방식 실패:', err.message);
+      errors.push(attempt.name + ': ' + err.message);
     }
   }
+  if(label) LAST_FETCH_METHOD[label] = '전부 실패';
+  throw new Error('모든 방식 실패 (' + errors.join(' / ') + ')');
 }
 
 // ===== Formatting helpers =====
@@ -709,8 +721,8 @@ async function loadAllData(isManual){
   setStatus('loading', isManual ? '새로고침 중…' : '최신 데이터 확인 중…');
   try{
     const [purchaseRaw, trafficRaw] = await Promise.all([
-      fetchSheetRaw(SHEET_URLS.purchase),
-      fetchSheetRaw(SHEET_URLS.traffic)
+      fetchSheetRaw(SHEET_URLS.purchase, 'purchase'),
+      fetchSheetRaw(SHEET_URLS.traffic, 'traffic')
     ]);
     const purchaseRows = parseCSV(purchaseRaw);
     const trafficRows = parseCSV(trafficRaw);
@@ -867,7 +879,7 @@ function renderPanel1(){
       <div class="chart-box">
         <div class="chart-canvas-wrap"><canvas id="chartDailyPurchases"></canvas></div>
       </div>
-      <p class="debug-line">진단: 구매 데이터 ${purchase.length}건 중 날짜 인식된 건 ${purchase.filter(p=>p.date).length}건</p>
+      <p class="debug-line">진단: 구매 데이터 ${purchase.length}건 중 날짜 인식된 건 ${purchase.filter(p=>p.date).length}건 (가져온 방식: ${LAST_FETCH_METHOD.purchase})</p>
       <p class="debug-line">헤더 원문: ${PARSE_DEBUG.purchaseHeader} / 날짜 컬럼 인덱스: ${PARSE_DEBUG.purchaseDateCol}</p>
     </section>` : `
     <section class="block">
