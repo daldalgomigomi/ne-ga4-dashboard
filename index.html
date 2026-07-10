@@ -380,6 +380,24 @@ function categorize(source){
   return '기타';
 }
 
+function normalizeDate(v){
+  if(v == null) return null;
+  const s = String(v).trim();
+  if(!s) return null;
+  // GA4 typically exports dates as YYYYMMDD (e.g. 20260609)
+  let m = s.match(/^(\d{4})(\d{2})(\d{2})$/);
+  if(m){
+    return { key: s, label: m[2]+'/'+m[3] };
+  }
+  // Also handle YYYY-MM-DD or YYYY/MM/DD just in case
+  m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if(m){
+    const mm = m[2].padStart(2,'0'), dd = m[3].padStart(2,'0');
+    return { key: m[1]+mm+dd, label: mm+'/'+dd };
+  }
+  return { key: s, label: s };
+}
+
 function findHeaderRow(rows, mustContain){
   for(let i=0; i<Math.min(rows.length, 10); i++){
     const r = rows[i] || [];
@@ -397,6 +415,7 @@ function buildTrafficRows(rows){
   if(headerIdx === -1) return [];
   const h = rows[headerIdx];
   const col = {
+    date: colIndex(h, '날짜'),
     device: colIndex(h, '유입기기'),
     source: colIndex(h, '세션 소스/매체'),
     sessions: colIndex(h, '세션수'),
@@ -418,6 +437,7 @@ function buildTrafficRows(rows){
     if(!String(device||'').trim() || !String(source||'').trim()) continue;
     out.push({
       idx: i - headerIdx,
+      date: col.date>=0 ? normalizeDate(r[col.date]) : null,
       device: String(device).trim(),
       source: String(source).trim(),
       sessions: parseNum(r[col.sessions]),
@@ -442,6 +462,7 @@ function buildPurchaseRows(rows){
   if(headerIdx === -1) return [];
   const h = rows[headerIdx];
   const col = {
+    date: colIndex(h, '날짜'),
     txnId: colIndex(h, '거래 ID'),
     source: colIndex(h, '첫 사용자 소스/매체'),
     revenue: colIndex(h, '구매 수익'),
@@ -456,6 +477,7 @@ function buildPurchaseRows(rows){
     if(!String(device||'').trim() || !String(source||'').trim()) continue;
     out.push({
       idx: i - headerIdx,
+      date: col.date>=0 ? normalizeDate(r[col.date]) : null,
       txn_id: String(r[col.txnId]||'').trim(),
       source: String(source).trim(),
       device: String(device).trim(),
@@ -561,6 +583,7 @@ let overallConv = 0, revPerSession = 0;
 let byDeviceSessions = new Map(), byDevicePurchase = new Map();
 let pcStat = {sessions:0, txn:0, revenue:0, aov:0, conv:0};
 let moStat = {sessions:0, txn:0, revenue:0, aov:0, conv:0};
+let dailyStats = [];
 
 function deviceStat(device){
   const tArr = byDeviceSessions.get(device) || [];
@@ -582,6 +605,45 @@ function computeDerived(){
   byDevicePurchase = groupBy(purchase, p=>p.device);
   pcStat = deviceStat('PC');
   moStat = deviceStat('MO');
+  dailyStats = buildDailyStats();
+}
+
+function buildDailyStats(){
+  const sessionsByDate = new Map();
+  const trafficRevByDate = new Map();
+  const txnByDate = new Map();
+  const purchaseRevByDate = new Map();
+
+  traffic.forEach(t=>{
+    if(!t.date) return;
+    const k = t.date.key;
+    sessionsByDate.set(k, (sessionsByDate.get(k)||0) + t.sessions);
+    trafficRevByDate.set(k, (trafficRevByDate.get(k)||0) + t.revenue);
+  });
+  purchase.forEach(p=>{
+    if(!p.date) return;
+    const k = p.date.key;
+    txnByDate.set(k, (txnByDate.get(k)||0) + 1);
+    purchaseRevByDate.set(k, (purchaseRevByDate.get(k)||0) + p.revenue);
+  });
+
+  const allKeys = new Set([...sessionsByDate.keys(), ...txnByDate.keys()]);
+  if(allKeys.size === 0) return [];
+
+  const labelOf = (k) => {
+    const found = traffic.find(t=>t.date && t.date.key===k) || purchase.find(p=>p.date && p.date.key===k);
+    return found ? found.date.label : k;
+  };
+
+  const out = [...allKeys].map(k => ({
+    key: k,
+    label: labelOf(k),
+    sessions: sessionsByDate.get(k) || 0,
+    txn: txnByDate.get(k) || 0,
+    revenue: purchaseRevByDate.get(k) || 0
+  }));
+  out.sort((a,b)=> a.key.localeCompare(b.key));
+  return out;
 }
 
 // ===== Status UI (loading / last-updated / refresh button) =====
@@ -739,6 +801,26 @@ function renderPanel1(){
         </div>
       </div>
     </section>
+
+    ${dailyStats.length > 0 ? `
+    <section class="block">
+      <div class="block-head"><h2 class="block-title">일별 <span class="hl blue">유입수</span></h2></div>
+      <div class="chart-box">
+        <div class="chart-canvas-wrap"><canvas id="chartDailySessions"></canvas></div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="block-head"><h2 class="block-title">일별 <span class="hl mint">구매 건수</span></h2></div>
+      <div class="chart-box">
+        <div class="chart-canvas-wrap"><canvas id="chartDailyPurchases"></canvas></div>
+      </div>
+    </section>` : `
+    <section class="block">
+      <div class="callout blue">
+        <strong>일별 추이를 보고 싶으시면</strong> GA4 탐색 리포트에 <strong>'날짜'</strong> 측정기준을 추가해서 시트를 다시 내보내주세요. 그러면 이 자리에 일별 유입수·구매 건수 그래프가 자동으로 나타납니다.
+      </div>
+    </section>`}
   `;
 
   new Chart(document.getElementById('chartPCMO'), {
@@ -756,6 +838,41 @@ function renderPanel1(){
       scales:{ y:{ grid:{color:COLORS.rule}, beginAtZero:true }, x:{ grid:{display:false} } }
     }
   });
+
+  if(dailyStats.length > 0){
+    new Chart(document.getElementById('chartDailySessions'), {
+      type: 'bar',
+      data: {
+        labels: dailyStats.map(d=>d.label),
+        datasets: [
+          { label:'세션', backgroundColor: COLORS.pc, borderRadius:4, data: dailyStats.map(d=>d.sessions) }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{ y:{ grid:{color:COLORS.rule}, beginAtZero:true, title:{display:true, text:'세션', font:{size:11}} }, x:{ grid:{display:false} } }
+      }
+    });
+
+    new Chart(document.getElementById('chartDailyPurchases'), {
+      type: 'bar',
+      data: {
+        labels: dailyStats.map(d=>d.label),
+        datasets: [
+          { label:'구매 건수', backgroundColor: COLORS.mo, borderRadius:4, data: dailyStats.map(d=>d.txn) }
+        ]
+      },
+      options: {
+        responsive:true, maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{ callbacks:{ afterLabel:(c)=> '수익: ' + fmtWon(dailyStats[c.dataIndex].revenue) } }
+        },
+        scales:{ y:{ grid:{color:COLORS.rule}, beginAtZero:true, title:{display:true, text:'구매 건수', font:{size:11}} }, x:{ grid:{display:false} } }
+      }
+    });
+  }
 }
 
 // ===================================================================
