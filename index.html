@@ -564,7 +564,6 @@ let LAST_FETCH_METHOD = { purchase: '(아직 없음)', traffic: '(아직 없음)
 
 async function fetchSheetRaw(urls, label){
   const attempts = [
-    { name: 'gviz', url: urls.gviz },
     { name: 'export', url: urls.primary },
     { name: 'pub', url: urls.fallback }
   ];
