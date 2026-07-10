@@ -252,6 +252,7 @@ table.data-table td.num, table.data-table th.num{font-family:'IBM Plex Mono', mo
 .seg button.active{background:var(--ink); color:#fff;}
 .table-scroll{max-height:520px; overflow:auto; border:1px solid var(--border); border-radius:var(--radius);}
 .row-count{font-size:12px; color:var(--ink-faint); margin-top:8px;}
+.debug-line{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-faint); margin:8px 0 0;}
 
 @media (max-width:600px){
   .content{padding:20px 16px 40px;}
@@ -281,7 +282,7 @@ table.data-table td.num, table.data-table th.num{font-family:'IBM Plex Mono', mo
     <div class="page-head">
       <div>
         <h1 class="page-title">유입 &amp; 전자상거래 구매 성과 리포트</h1>
-        <p class="page-sub">전자상거래 연동 이후 20일 구간의 세션·채널·구매 raw 데이터를 기반으로 PC/MO 성과와 채널별 전환 효율을 정리했습니다.</p>
+        <p class="page-sub">GA 전자상거래 연동 이후(6/9) 구매, 유입 raw 데이터를 기반으로 PC/MO 성과와 채널별 전환 효율을 정리했습니다.</p>
       </div>
       <div class="period-badge" id="periodBadge">데이터 확인 중…</div>
       <div class="sync-status loading" id="syncStatus"><span class="dot"></span><span class="sync-text">데이터 불러오는 중…</span><button id="refreshBtn" title="지금 새로고침">↻ 새로고침</button></div>
@@ -382,20 +383,27 @@ function categorize(source){
 
 function normalizeDate(v){
   if(v == null) return null;
-  const s = String(v).trim();
-  if(!s) return null;
-  // GA4 typically exports dates as YYYYMMDD (e.g. 20260609)
-  let m = s.match(/^(\d{4})(\d{2})(\d{2})$/);
-  if(m){
-    return { key: s, label: m[2]+'/'+m[3] };
+  const raw = String(v).trim();
+  if(!raw) return null;
+  // Strip thousand-separator commas, spaces, and any stray non-alphanumeric
+  // characters a spreadsheet's number formatting might introduce
+  // (e.g. a cell formatted as "#,##0" can export 20260609 as "20,260,609").
+  const digitsOnly = raw.replace(/[^0-9]/g, '');
+  if(digitsOnly.length === 8){
+    const yyyy = digitsOnly.slice(0,4), mm = digitsOnly.slice(4,6), dd = digitsOnly.slice(6,8);
+    return { key: yyyy+mm+dd, label: mm+'/'+dd };
   }
-  // Also handle YYYY-MM-DD or YYYY/MM/DD just in case
-  m = s.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  // YYYY-MM-DD / YYYY.MM.DD / YYYY/MM/DD (checked on the original string,
+  // since stripping separators would collapse this case incorrectly)
+  let m = raw.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})$/);
   if(m){
     const mm = m[2].padStart(2,'0'), dd = m[3].padStart(2,'0');
     return { key: m[1]+mm+dd, label: mm+'/'+dd };
   }
-  return { key: s, label: s };
+  // Unrecognized format — don't guess, since a wrong key would silently
+  // fail to match between the traffic and purchase tables.
+  console.warn('날짜 형식을 인식하지 못함:', raw);
+  return null;
 }
 
 function findHeaderRow(rows, mustContain){
@@ -406,8 +414,15 @@ function findHeaderRow(rows, mustContain){
   }
   return -1;
 }
+function normalizeHeaderText(s){
+  return String(s||'')
+    .replace(/\uFEFF/g, '')       // BOM
+    .replace(/[\u200B-\u200D]/g, '') // zero-width chars
+    .replace(/\u00A0/g, ' ')      // non-breaking space -> normal space
+    .trim();
+}
 function colIndex(headerRow, name){
-  return headerRow.findIndex(h => (h||'').trim() === name);
+  return headerRow.findIndex(h => normalizeHeaderText(h) === name);
 }
 
 function buildTrafficRows(rows){
@@ -830,6 +845,7 @@ function renderPanel1(){
       <div class="chart-box">
         <div class="chart-canvas-wrap"><canvas id="chartDailySessions"></canvas></div>
       </div>
+      <p class="debug-line">진단: 유입 데이터 ${traffic.length}행 중 날짜 인식된 행 ${traffic.filter(t=>t.date).length}행</p>
     </section>
 
     <section class="block">
@@ -837,11 +853,13 @@ function renderPanel1(){
       <div class="chart-box">
         <div class="chart-canvas-wrap"><canvas id="chartDailyPurchases"></canvas></div>
       </div>
+      <p class="debug-line">진단: 구매 데이터 ${purchase.length}건 중 날짜 인식된 건 ${purchase.filter(p=>p.date).length}건</p>
     </section>` : `
     <section class="block">
       <div class="callout blue">
         <strong>일별 추이를 보고 싶으시면</strong> GA4 탐색 리포트에 <strong>'날짜'</strong> 측정기준을 추가해서 시트를 다시 내보내주세요. 그러면 이 자리에 일별 유입수·구매 건수 그래프가 자동으로 나타납니다.
       </div>
+      <p class="debug-line">진단: 유입 ${traffic.length}행 (날짜 인식 ${traffic.filter(t=>t.date).length}행) · 구매 ${purchase.length}건 (날짜 인식 ${purchase.filter(p=>p.date).length}건)</p>
     </section>`}
   `;
 
