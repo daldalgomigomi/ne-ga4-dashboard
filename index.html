@@ -870,7 +870,6 @@ function renderPanel1(){
       <div class="chart-box">
         <div class="chart-canvas-wrap"><canvas id="chartDailySessions"></canvas></div>
       </div>
-      <p class="debug-line">진단: 유입 데이터 ${traffic.length}행 중 날짜 인식된 행 ${traffic.filter(t=>t.date).length}행</p>
     </section>
 
     <section class="block">
@@ -878,14 +877,11 @@ function renderPanel1(){
       <div class="chart-box">
         <div class="chart-canvas-wrap"><canvas id="chartDailyPurchases"></canvas></div>
       </div>
-      <p class="debug-line">진단: 구매 데이터 ${purchase.length}건 중 날짜 인식된 건 ${purchase.filter(p=>p.date).length}건 (가져온 방식: ${LAST_FETCH_METHOD.purchase})</p>
-      <p class="debug-line">헤더 원문: ${PARSE_DEBUG.purchaseHeader} / 날짜 컬럼 인덱스: ${PARSE_DEBUG.purchaseDateCol}</p>
     </section>` : `
     <section class="block">
       <div class="callout blue">
         <strong>일별 추이를 보고 싶으시면</strong> GA4 탐색 리포트에 <strong>'날짜'</strong> 측정기준을 추가해서 시트를 다시 내보내주세요. 그러면 이 자리에 일별 유입수·구매 건수 그래프가 자동으로 나타납니다.
       </div>
-      <p class="debug-line">진단: 유입 ${traffic.length}행 (날짜 인식 ${traffic.filter(t=>t.date).length}행) · 구매 ${purchase.length}건 (날짜 인식 ${purchase.filter(p=>p.date).length}건)</p>
     </section>`}
   `;
 
