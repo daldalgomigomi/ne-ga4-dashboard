@@ -427,7 +427,11 @@ function colIndex(headerRow, name){
 
 function buildTrafficRows(rows){
   const headerIdx = findHeaderRow(rows, ['세션 소스/매체', '세션수']);
-  if(headerIdx === -1) return [];
+  if(headerIdx === -1){
+    PARSE_DEBUG.trafficHeader = 'HEADER ROW NOT FOUND';
+    PARSE_DEBUG.trafficDateCol = -1;
+    return [];
+  }
   const h = rows[headerIdx];
   const col = {
     date: colIndex(h, '날짜'),
@@ -443,6 +447,8 @@ function buildTrafficRows(rows){
     keyEventRate: colIndex(h, '세션 주요 이벤트 비율'),
     revenue: colIndex(h, '총수익')
   };
+  PARSE_DEBUG.trafficHeader = JSON.stringify(h.map(c=>normalizeHeaderText(c)));
+  PARSE_DEBUG.trafficDateCol = col.date;
   const out = [];
   for(let i=headerIdx+1; i<rows.length; i++){
     const r = rows[i];
@@ -472,9 +478,15 @@ function buildTrafficRows(rows){
   return out;
 }
 
+let PARSE_DEBUG = { purchaseHeader: null, purchaseDateCol: -1, trafficHeader: null, trafficDateCol: -1 };
+
 function buildPurchaseRows(rows){
   const headerIdx = findHeaderRow(rows, ['거래 ID', '구매 수익']);
-  if(headerIdx === -1) return [];
+  if(headerIdx === -1){
+    PARSE_DEBUG.purchaseHeader = 'HEADER ROW NOT FOUND';
+    PARSE_DEBUG.purchaseDateCol = -1;
+    return [];
+  }
   const h = rows[headerIdx];
   const col = {
     date: colIndex(h, '날짜'),
@@ -483,6 +495,8 @@ function buildPurchaseRows(rows){
     revenue: colIndex(h, '구매 수익'),
     device: colIndex(h, '거래기기')
   };
+  PARSE_DEBUG.purchaseHeader = JSON.stringify(h.map(c=>normalizeHeaderText(c)));
+  PARSE_DEBUG.purchaseDateCol = col.date;
   const out = [];
   for(let i=headerIdx+1; i<rows.length; i++){
     const r = rows[i];
@@ -854,6 +868,7 @@ function renderPanel1(){
         <div class="chart-canvas-wrap"><canvas id="chartDailyPurchases"></canvas></div>
       </div>
       <p class="debug-line">진단: 구매 데이터 ${purchase.length}건 중 날짜 인식된 건 ${purchase.filter(p=>p.date).length}건</p>
+      <p class="debug-line">헤더 원문: ${PARSE_DEBUG.purchaseHeader} / 날짜 컬럼 인덱스: ${PARSE_DEBUG.purchaseDateCol}</p>
     </section>` : `
     <section class="block">
       <div class="callout blue">
