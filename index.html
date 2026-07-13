@@ -103,6 +103,8 @@ p.page-sub{font-size:13.5px; color:var(--ink-soft); margin:0; max-width:560px;}
   background:var(--surface); border:1px solid var(--border-strong); border-radius:8px;
   padding:8px 14px; white-space:nowrap; box-shadow:var(--shadow-sm);
 }
+.page-head-right{display:flex; flex-direction:column; align-items:flex-end; gap:8px;}
+.page-head-owner{font-size:12px; color:var(--ink-soft); margin:0;}
 .sync-status{
   display:flex; align-items:center; gap:8px;
   font-family:'IBM Plex Mono',monospace; font-size:12px;
@@ -199,23 +201,19 @@ p.block-note{color:var(--ink-soft); font-size:13px; margin:-6px 0 16px;}
 .callout ul{margin:6px 0 0; padding-left:18px;}
 .callout li{margin-bottom:4px;}
 
-/* Action item cards (실행 제안) */
+/* Action item cards (실행 제안) — numbered, no color-coding */
 .action-card{
+  display:flex; gap:14px;
   border:1px solid var(--border); border-radius:var(--radius);
   padding:16px 18px; margin-bottom:14px; background:var(--surface); box-shadow:var(--shadow-sm);
-  border-left:4px solid var(--border-strong);
 }
 .action-card:last-child{margin-bottom:0;}
-.action-card.urgent{border-left-color:var(--danger);}
-.action-card.opportunity{border-left-color:var(--mo);}
-.action-card.watch{border-left-color:var(--warn);}
-.action-tag{
-  display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:700;
-  text-transform:uppercase; letter-spacing:.04em; padding:3px 9px; border-radius:20px; margin-bottom:8px;
-  background:var(--danger-soft); color:var(--danger);
+.action-num{
+  flex-shrink:0; width:28px; height:28px; border-radius:50%;
+  background:var(--ink); color:#fff; font-family:'IBM Plex Mono',monospace; font-weight:700; font-size:13px;
+  display:flex; align-items:center; justify-content:center;
 }
-.action-card.opportunity .action-tag{background:var(--mo-soft); color:var(--mo);}
-.action-card.watch .action-tag{background:#FFF4E0; color:var(--warn);}
+.action-body{flex:1; min-width:0;}
 .action-title{font-size:15px; font-weight:700; color:var(--ink); margin-bottom:6px;}
 .action-desc{font-size:13.5px; color:var(--ink-soft); line-height:1.6; margin:0 0 8px;}
 .action-todo{font-size:13.5px; color:var(--ink); font-weight:600; margin:0; padding-top:8px; border-top:1px dashed var(--border);}
@@ -233,6 +231,8 @@ table.data-table th .arrow{font-size:10px; opacity:.5; margin-left:3px;}
 table.data-table td{padding:9px 12px; border-bottom:1px solid var(--border); color:var(--ink);}
 table.data-table tbody tr:hover{background:#FAFAFB;}
 table.data-table td.num, table.data-table th.num{font-family:'IBM Plex Mono', monospace; text-align:right;}
+table.data-table tr.top-rank td{font-weight:700;}
+table.data-table .medal{margin-right:6px;}
 .badge{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:10.5px; font-weight:600; padding:2px 8px; border-radius:5px;}
 .badge.pc{background:var(--accent-soft); color:var(--pc);}
 .badge.mo{background:var(--mo-soft); color:var(--mo);}
@@ -253,6 +253,7 @@ table.data-table td.num, table.data-table th.num{font-family:'IBM Plex Mono', mo
 .table-scroll{max-height:520px; overflow:auto; border:1px solid var(--border); border-radius:var(--radius);}
 .row-count{font-size:12px; color:var(--ink-faint); margin-top:8px;}
 .debug-line{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink-faint); margin:8px 0 0;}
+.note-line{font-size:12.5px; color:var(--ink-soft); margin:10px 0 0; padding-top:10px; border-top:1px dashed var(--border);}
 
 @media (max-width:600px){
   .content{padding:20px 16px 40px;}
@@ -265,7 +266,7 @@ table.data-table td.num, table.data-table th.num{font-family:'IBM Plex Mono', mo
 <div class="shell">
   <aside class="sidebar">
     <div class="brand">
-      <p class="brand-eyebrow">NE능률 · 디지털마케팅팀 김한솔</p>
+      <p class="brand-eyebrow">NE능률</p>
       <p class="brand-title">GA4 성과 대시보드</p>
       <p class="brand-sub">유입 &amp; 전자상거래 구매 분석</p>
     </div>
@@ -284,8 +285,11 @@ table.data-table td.num, table.data-table th.num{font-family:'IBM Plex Mono', mo
         <h1 class="page-title">유입 &amp; 전자상거래 구매 성과 리포트</h1>
         <p class="page-sub">GA 전자상거래 연동 이후(6/9) 구매, 유입 raw 데이터를 기반으로 PC/MO 성과와 채널별 전환 효율을 정리했습니다.</p>
       </div>
-      <div class="period-badge" id="periodBadge">데이터 확인 중…</div>
-      <div class="sync-status loading" id="syncStatus"><span class="dot"></span><span class="sync-text">데이터 불러오는 중…</span><button id="refreshBtn" title="지금 새로고침">↻ 새로고침</button></div>
+      <div class="page-head-right">
+        <div class="period-badge" id="periodBadge">데이터 확인 중…</div>
+        <div class="sync-status loading" id="syncStatus"><span class="dot"></span><span class="sync-text">데이터 불러오는 중…</span><button id="refreshBtn" title="지금 새로고침">↻ 새로고침</button></div>
+        <p class="page-head-owner">디지털마케팅팀 김한솔</p>
+      </div>
     </div>
 
     <main>
@@ -369,7 +373,7 @@ function categorize(source){
   if(s.includes('naver')) return 'Naver 기타(카페/블로그 등)';
   if(s.includes('google') && s.includes('organic')) return 'Google 자연검색';
   if(s.includes('google')) return 'Google 기타';
-  if(s.includes('members.neungyule')) return '능률 통합회원';
+  if(s.includes('members.neungyule')) return '능률 로그인 페이지';
   if(s.includes('netutor.co.kr')) return 'NE튜터';
   if(s.includes('nebooks')) return 'NE북스';
   if(s.includes('lms.nelab')) return '주니어랩(B2B)';
@@ -767,19 +771,46 @@ function buildSituationSummary(){
   const bsaPc = chDev.find(r=>r.channel==='Naver BSA' && r.device==='PC');
   const bsaMoConv = bsaMo ? bsaMo.conv_rate : 0;
   const bsaPcConv = bsaPc ? bsaPc.conv_rate : 0;
+  const bsaTotalTxn = (bsaMo?bsaMo.txn:0) + (bsaPc?bsaPc.txn:0);
+  const bsaTotalRevenue = (bsaMo?bsaMo.revenue:0) + (bsaPc?bsaPc.revenue:0);
+  const bsaBetterDevice = bsaMoConv >= bsaPcConv ? 'MO' : 'PC';
 
   return `
     <section class="block">
       <div class="situation-box">
-        <div class="situation-label">지금 상황을 한 줄로 요약하면</div>
+        <div class="situation-label">요약</div>
         <p class="situation-lead">세션 ${fmtNum(totalSessions)}건 중 ${fmtNum(totalTxn)}건이 구매로 이어졌고(전환율 ${overallConv.toFixed(2)}%), 수익은 총 ${fmtWon(totalPurchaseRevenue)}입니다.</p>
         <ul class="situation-points">
-          <li><strong>${winner}가 더 잘 팔림</strong> — ${winner} 전환율 ${winnerConv.toFixed(2)}% vs 나머지 ${loserConv.toFixed(2)}%</li>
-          <li><strong>MO 다이렉트 유입이 큼</strong> — 모바일 세션의 ${directShare.toFixed(1)}%가 출처 불명 '다이렉트'로 잡힘 (문자/앱 링크 추정)</li>
-          <li><strong>네이버 BSA는 모바일이 훨씬 잘 팔림</strong> — MO 전환율 ${bsaMoConv.toFixed(2)}% vs PC ${bsaPcConv.toFixed(2)}%</li>
+          <li><strong>${winner} 채널의 판매 비중이 높음</strong> — ${winner} 전환율 ${winnerConv.toFixed(2)}%로 나머지 기기(${loserConv.toFixed(2)}%) 대비 우위</li>
+          <li><strong>모바일 유입 경로 추적 개선 필요</strong> — 모바일 세션의 ${directShare.toFixed(1)}%가 출처 미상 '다이렉트'로 집계됨 (문자·앱 링크 유입 추정)</li>
+          <li><strong>네이버 BSA, 유입·구매 모두 견조</strong> — 총 ${bsaTotalTxn}건 거래(${fmtWon(bsaTotalRevenue)})를 견인했으며, 특히 ${bsaBetterDevice} 전환율(${Math.max(bsaMoConv,bsaPcConv).toFixed(2)}%)이 우수함</li>
         </ul>
       </div>
     </section>`;
+}
+
+function buildWeekendNote(){
+  if(dailyStats.length === 0) return '';
+  const withDow = dailyStats.map(d=>{
+    const yyyy = +d.key.slice(0,4), mm = +d.key.slice(4,6)-1, dd = +d.key.slice(6,8);
+    const dow = new Date(yyyy, mm, dd).getDay(); // 0=Sun, 6=Sat
+    return { ...d, isWeekend: (dow===0 || dow===6) };
+  });
+  const weekend = withDow.filter(d=>d.isWeekend);
+  const weekday = withDow.filter(d=>!d.isWeekend);
+  if(weekend.length === 0 || weekday.length === 0) return '';
+
+  const avg = (arr, key) => arr.reduce((a,b)=>a+b[key],0) / arr.length;
+  const weekendSessions = avg(weekend, 'sessions');
+  const weekdaySessions = avg(weekday, 'sessions');
+  const weekendTxn = avg(weekend, 'txn');
+  const weekdayTxn = avg(weekday, 'txn');
+
+  if(weekendSessions < weekdaySessions && weekendTxn < weekdayTxn){
+    const sessionsDrop = ((1 - weekendSessions/weekdaySessions) * 100).toFixed(0);
+    return `<p class="note-line">참고: 주말 평균 유입(${Math.round(weekendSessions)}건)이 평일 평균(${Math.round(weekdaySessions)}건) 대비 약 ${sessionsDrop}% 낮고, 구매 건수도 같은 흐름으로 감소하는 패턴이 반복됩니다.</p>`;
+  }
+  return `<p class="note-line">참고: 현재 기간에서는 뚜렷한 주말/평일 차이가 관찰되지 않습니다.</p>`;
 }
 
 function renderPanel1(){
@@ -813,7 +844,7 @@ function renderPanel1(){
         </div>
       </div>
       <div class="callout blue">
-        <strong>유입 결과만 보면:</strong> PC는 '능률 통합회원사이트'를 통한 유입이 절반 이상(52.6%)으로 안정적인 편이고, MO는 '다이렉트'(38.75%)와 '구글 자연검색'(17.62%)이 커서 정확히 어디서 왔는지 추적이 어려운 세션이 많습니다.
+        PC는 '능률 로그인 페이지'를 통한 유입이 절반 이상(52.6%)으로 안정적인 편이고, MO는 '다이렉트'(38.75%)와 '구글 자연검색'(17.62%)이 커서 정확히 어디서 왔는지 추적이 어려운 세션이 많습니다.
       </div>
     </section>
 
@@ -840,7 +871,7 @@ function renderPanel1(){
         </div>
       </div>
       <div class="callout mint">
-        <strong>구매 결과만 보면:</strong> 수익 기준 1위 채널은 <strong>${topRevenueChannel?topRevenueChannel.channel:'-'}(${topRevenueChannel?topRevenueChannel.device:''})</strong>이며 ${topRevenueChannel?fmtWon(topRevenueChannel.revenue):'-'}를 만들었습니다. PC 평균 객단가(${fmtWon(pcStat.aov)})가 MO(${fmtWon(moStat.aov)})보다 높은데, 주니어랩(B2B) 고액 거래가 PC에 몰려있는 영향이 큽니다.
+        수익 기준 1위 채널은 <strong>${topRevenueChannel?topRevenueChannel.channel:'-'}(${topRevenueChannel?topRevenueChannel.device:''})</strong>이며 ${topRevenueChannel?fmtWon(topRevenueChannel.revenue):'-'}를 만들었습니다. PC 평균 객단가(${fmtWon(pcStat.aov)})가 MO(${fmtWon(moStat.aov)})보다 높은데, 주니어랩(B2B) 고액 거래가 PC에 몰려있는 영향이 큽니다.
       </div>
     </section>
 
@@ -877,6 +908,7 @@ function renderPanel1(){
       <div class="chart-box">
         <div class="chart-canvas-wrap"><canvas id="chartDailyPurchases"></canvas></div>
       </div>
+      ${buildWeekendNote()}
     </section>` : `
     <section class="block">
       <div class="callout blue">
@@ -940,17 +972,35 @@ function renderPanel1(){
 // ===================================================================
 // PANEL 2 — 채널별 성과 (유입 + 구매 + 전환율을 한 화면에 통합)
 // ===================================================================
-let chSortKey = 'sessions';
+let chSortKey = 'txn';
 let chSortDir = -1;
+
+function buildChannelMerged(){
+  const byChannel = groupBy(chDev, r=>r.channel);
+  const out = [];
+  byChannel.forEach((rows, channel)=>{
+    const sessions = sum(rows, r=>r.sessions);
+    const txn = sum(rows, r=>r.txn);
+    const revenue = sum(rows, r=>r.revenue);
+    out.push({
+      channel, sessions, txn, revenue,
+      conv_rate: sessions ? +(txn/sessions*100).toFixed(2) : 0,
+      rev_per_session: sessions ? +(revenue/sessions).toFixed(1) : 0
+    });
+  });
+  return out;
+}
+
+const MEDALS = ['🥇','🥈','🥉','4️⃣','5️⃣'];
 
 function renderChannelTable(){
   const tbody = document.getElementById('chTableBody');
   if(!tbody) return;
-  const rows = chDev.slice().sort((a,b)=> (a[chSortKey]-b[chSortKey]) * chSortDir);
-  tbody.innerHTML = rows.map(r=>`
-    <tr>
-      <td>${r.channel}</td>
-      <td><span class="badge ${r.device.toLowerCase()}">${r.device}</span></td>
+  const merged = buildChannelMerged();
+  const rows = merged.slice().sort((a,b)=> (a[chSortKey]-b[chSortKey]) * chSortDir);
+  tbody.innerHTML = rows.map((r,i)=>`
+    <tr class="${i<5?'top-rank':''}">
+      <td>${i<5?`<span class="medal">${MEDALS[i]}</span>`:''}${r.channel}</td>
       <td class="num">${fmtNum(r.sessions)}</td>
       <td class="num">${r.txn}</td>
       <td class="num">${fmtWon(r.revenue)}</td>
@@ -969,13 +1019,12 @@ function renderPanel2(){
   el.innerHTML = `
     <section class="block">
       <div class="block-head"><h2 class="block-title">채널별 성과 <span class="hl yellow">한눈에 보기</span></h2></div>
-      <p class="block-note">유입(세션)과 구매(거래·수익)를 채널·기기 단위로 합쳐서, 어디서 사람이 오고 어디서 실제로 팔리는지 한 표로 봅니다. 헤더 클릭하면 정렬됩니다.</p>
+      <p class="block-note">PC+MO를 합산한 채널 기준 랭킹입니다. 기본은 거래수 내림차순이며, 헤더(세션 등)를 클릭하면 해당 기준으로 다시 정렬됩니다. 상위 5개 채널은 메달로 표시됩니다.</p>
       <div class="table-scroll">
         <table class="data-table">
           <thead>
             <tr>
               <th data-key="channel">채널</th>
-              <th data-key="device">기기</th>
               <th class="num" data-key="sessions">세션</th>
               <th class="num" data-key="txn">거래수</th>
               <th class="num" data-key="revenue">수익</th>
@@ -1053,40 +1102,70 @@ function renderPanel3(){
   const bsaMo = chDev.find(r=>r.channel==='Naver BSA' && r.device==='MO');
   const bsaPc = chDev.find(r=>r.channel==='Naver BSA' && r.device==='PC');
   const googleMo = chDev.find(r=>r.channel==='Google 자연검색' && r.device==='MO');
+  const googleMoShare = moStat.sessions && googleMo ? (googleMo.sessions/moStat.sessions*100) : 0;
   const juniorPc = chDev.find(r=>r.channel==='주니어랩(B2B)' && r.device==='PC');
+  const merged = buildChannelMerged();
+  const topByRevPerSession = merged.filter(r=>r.sessions>=30).slice().sort((a,b)=>b.rev_per_session-a.rev_per_session)[0];
+
+  const items = [
+    {
+      title: `MO 다이렉트 유입 ${directShare.toFixed(1)}% — 출처 추적이 안 되고 있음`,
+      desc: `모바일 세션 ${fmtNum(moStat.sessions)}건 중 ${fmtNum(directMoSessions)}건이 '다이렉트'로 잡힙니다. 문자 링크, 앱 내 브라우저 접속 등이 이렇게 잡히는 경우가 많아 실제 어떤 채널이 효과 있는지 알기 어렵습니다.`,
+      todo: `문자·카카오·이메일 등 모든 마케팅 링크에 UTM 파라미터 부착을 권장합니다.`
+    },
+    {
+      title: `네이버 BSA, 모바일 전환이 PC보다 크게 높음`,
+      desc: `BSA 전환율 — MO ${bsaMo?bsaMo.conv_rate.toFixed(2):'-'}% vs PC ${bsaPc?bsaPc.conv_rate.toFixed(2):'-'}%. 모바일에서 이미 잘 통하는 키워드가 있다는 의미입니다.`,
+      todo: `MO 전환이 높은 키워드 위주로 예산을 재배분하고, 구매 시간대를 분석해 노출 스케줄을 조정하는 것을 제안합니다.`
+    },
+    {
+      title: `구글 자연검색 MO — 세션 비중 ${googleMoShare.toFixed(1)}%인데 구매 전환은 저조`,
+      desc: `모바일 세션의 상당 부분(${googleMo?fmtNum(googleMo.sessions):'-'}건)을 차지하는 채널인데 구매로 이어지는 비율이 낮습니다. 대부분 부가자료(eBook·오디오북) 다운로드 목적의 방문으로 추정됩니다.`,
+      todo: `방문 목적과 구매 유도 CTA가 맞는지 점검하고, 필요 시 다운로드 후 구매 유도 흐름을 보강하는 것을 제안합니다.`
+    },
+    {
+      title: `${topByRevPerSession?topByRevPerSession.channel:'주니어랩(B2B)'} — 세션당 수익 효율이 가장 높음`,
+      desc: `세션은 많지 않지만(${topByRevPerSession?fmtNum(topByRevPerSession.sessions):'-'}건) 전환율 ${topByRevPerSession?topByRevPerSession.conv_rate.toFixed(2):'-'}%, 세션당 수익 ${topByRevPerSession?fmtWon(topByRevPerSession.rev_per_session):'-'}로 효율이 두드러집니다.`,
+      todo: `해당 채널에 대한 별도 예산 배정이나 캠페인 확대를 검토할 가치가 있습니다.`
+    }
+  ];
+
+  if(dailyStats.length > 0){
+    const withDow = dailyStats.map(d=>{
+      const yyyy = +d.key.slice(0,4), mm = +d.key.slice(4,6)-1, dd = +d.key.slice(6,8);
+      const dow = new Date(yyyy, mm, dd).getDay();
+      return { ...d, isWeekend: (dow===0||dow===6) };
+    });
+    const weekend = withDow.filter(d=>d.isWeekend);
+    const weekday = withDow.filter(d=>!d.isWeekend);
+    if(weekend.length && weekday.length){
+      const avg = (arr,key)=> arr.reduce((a,b)=>a+b[key],0)/arr.length;
+      const weekendS = avg(weekend,'sessions'), weekdayS = avg(weekday,'sessions');
+      if(weekendS < weekdayS){
+        const drop = ((1-weekendS/weekdayS)*100).toFixed(0);
+        items.push({
+          title: `주말 유입·구매가 평일 대비 약 ${drop}% 낮음`,
+          desc: `날짜별 데이터 기준, 주말 평균 유입(${Math.round(weekendS)}건)이 평일 평균(${Math.round(weekdayS)}건)보다 뚜렷하게 낮은 패턴이 반복됩니다.`,
+          todo: `주말 전용 프로모션이나 리마인드 메시지 발송으로 주말 이탈을 보완하는 방안을 제안합니다.`
+        });
+      }
+    }
+  }
 
   el.innerHTML = `
     <section class="block">
       <div class="block-head"><h2 class="block-title">이번 주에 <span class="hl coral">확인해볼 것</span></h2></div>
-      <p class="block-note">데이터에서 바로 보이는 이슈와 기회를 우선순위 순으로 정리했습니다.</p>
-
-      <div class="action-card urgent">
-        <div class="action-tag">긴급</div>
-        <div class="action-title">MO 다이렉트 유입 ${directShare.toFixed(1)}% — 출처 추적이 안 되고 있음</div>
-        <p class="action-desc">모바일 세션 ${fmtNum(moStat.sessions)}건 중 ${fmtNum(directMoSessions)}건이 '다이렉트'로 잡힙니다. 문자 링크, 앱 내 브라우저 접속 등이 이렇게 잡히는 경우가 많아 실제 어떤 채널이 효과 있는지 알기 어렵습니다.</p>
-        <p class="action-todo">→ 문자·카카오·이메일 등 모든 마케팅 링크에 UTM 파라미터 부착</p>
-      </div>
-
-      <div class="action-card opportunity">
-        <div class="action-tag">기회</div>
-        <div class="action-title">네이버 BSA, 모바일 전환이 PC보다 6배 이상 높음</div>
-        <p class="action-desc">BSA 전환율 — MO ${bsaMo?bsaMo.conv_rate.toFixed(2):'-'}% vs PC ${bsaPc?bsaPc.conv_rate.toFixed(2):'-'}%. 모바일에서 이미 잘 통하는 키워드가 있다는 뜻입니다.</p>
-        <p class="action-todo">→ MO 전환 높은 키워드 위주로 예산 재배분, 구매 시간대 분석해서 노출 스케줄 조정</p>
-      </div>
-
-      <div class="action-card watch">
-        <div class="action-tag">점검 필요</div>
-        <div class="action-title">구글 자연검색 MO — 세션 ${googleMo?fmtNum(googleMo.sessions):'-'}건인데 구매 0건</div>
-        <p class="action-desc">전체 세션 중 2위 규모(17.62%)의 채널인데 구매로 전혀 이어지지 않고 있습니다. 대부분 부가자료(eBook/오디오북) 다운로드 목적의 방문으로 추정됩니다.</p>
-        <p class="action-todo">→ 방문 목적과 구매 유도 CTA가 맞는지 확인, 필요 시 다운로드 후 구매 유도 흐름 보강</p>
-      </div>
-
-      <div class="action-card opportunity">
-        <div class="action-tag">참고</div>
-        <div class="action-title">주니어랩(B2B)이 세션당 수익이 가장 높은 채널</div>
-        <p class="action-desc">세션은 ${juniorPc?fmtNum(juniorPc.sessions):'-'}건뿐이지만 전환율 ${juniorPc?juniorPc.conv_rate.toFixed(2):'-'}%, 세션당 수익 ${juniorPc?fmtWon(juniorPc.rev_per_session):'-'}로 압도적입니다.</p>
-        <p class="action-todo">→ B2B 채널에 대한 별도 예산/캠페인 검토 가치 있음</p>
-      </div>
+      <p class="block-note">현재 데이터 기준으로 우선순위가 높은 순서대로 정리했습니다.</p>
+      ${items.map((item,i)=>`
+        <div class="action-card">
+          <div class="action-num">${i+1}</div>
+          <div class="action-body">
+            <div class="action-title">${item.title}</div>
+            <p class="action-desc">${item.desc}</p>
+            <p class="action-todo">${item.todo}</p>
+          </div>
+        </div>
+      `).join('')}
     </section>
   `;
 }
@@ -1159,7 +1238,7 @@ function renderRawTable(){
   } else {
     cols = [
       {key:'device', label:'기기'}, {key:'txn_id', label:'거래ID'}, {key:'source', label:'첫 유입 소스/매체'},
-      {key:'revenue', label:'구매수익', num:true, fmt:fmtWon}, {key:'revenue_pct', label:'수익비중', num:true, fmt:v=>v.toFixed(2)+'%'}
+      {key:'revenue', label:'구매수익', num:true, fmt:fmtWon}
     ];
     data = purchase;
   }
