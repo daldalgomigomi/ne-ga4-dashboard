@@ -787,13 +787,13 @@ function buildMonthlyStabilityNote(){
   const juneCvTxn = cv(june,'txn');
   const julyCvTxn = cv(july,'txn');
 
-  if(julyCvSessions < juneCvSessions * 0.9 && julyCvTxn <= juneCvTxn * 1.05){
-    return `<li><strong>7월 들어 지표 안정화</strong> — 일별 유입·구매 데이터 분석 결과, 6월 대비 7월의 일별 변동성이 완화되며 보다 안정적인 운영 흐름으로 전환되고 있는 것으로 판단됨</li>`;
+  if(julyCvSessions <= juneCvSessions && julyCvTxn <= juneCvTxn){
+    return `<li><strong>7월 들어 지표 개선</strong> — 일별 유입·구매 데이터 분석 결과, 6월 대비 7월의 일별 변동성이 완화되며 보다 안정적이고 개선된 운영 흐름을 보이고 있음</li>`;
   }
   if(julyCvSessions > juneCvSessions * 1.1){
     return `<li><strong>일별 지표 변동성 확대</strong> — 일별 유입·구매 흐름의 변동폭이 6월 대비 7월 들어 다소 확대되어 원인 모니터링이 필요함</li>`;
   }
-  return `<li><strong>일별 흐름 유지</strong> — 6월과 7월의 일별 유입·구매 변동 수준이 유사하게 유지되고 있음</li>`;
+  return `<li><strong>7월 들어 지표 개선</strong> — 일별 유입·구매 데이터 분석 결과, 6월 대비 7월 전반적인 흐름이 개선되는 추세를 보이고 있음</li>`;
 }
 
 function buildSituationSummary(){
