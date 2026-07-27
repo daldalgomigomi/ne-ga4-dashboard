@@ -105,6 +105,15 @@ p.page-sub{font-size:13.5px; color:var(--ink-soft); margin:0; max-width:720px;}
 }
 .page-head-right{display:flex; flex-direction:column; align-items:flex-end; gap:8px;}
 .page-head-owner{font-size:12px; color:var(--ink-soft); margin:0;}
+.period-filter-select{
+  font-family:'Pretendard'; font-weight:600; font-size:13px; color:var(--ink);
+  background:var(--surface); border:1.5px solid var(--ink); border-radius:8px;
+  padding:8px 30px 8px 14px; cursor:pointer; box-shadow:var(--shadow-sm);
+  appearance:none; -webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='8'><path d='M1 1l5 5 5-5' stroke='%23111827' stroke-width='1.5' fill='none' fill-rule='evenodd'/></svg>");
+  background-repeat:no-repeat; background-position:right 12px center;
+}
+.period-filter-select:focus{outline:2px solid var(--accent); outline-offset:1px;}
 .sync-status{
   display:flex; align-items:center; gap:8px;
   font-family:'IBM Plex Mono',monospace; font-size:12px;
@@ -292,6 +301,9 @@ table.data-table .medal{margin-right:6px;}
         <p class="page-sub">GA 전자상거래 연동 이후(6/9) 구매, 유입 raw 데이터를 기반으로 PC/MO 성과와 채널별 전환 효율을 정리했습니다.</p>
       </div>
       <div class="page-head-right">
+        <select id="periodFilterSelect" class="period-filter-select">
+          <option value="all">전체 데이터</option>
+        </select>
         <div class="period-badge" id="periodBadge">데이터 확인 중…</div>
         <div class="sync-status loading" id="syncStatus"><span class="dot"></span><span class="sync-text">데이터 불러오는 중…</span><button id="refreshBtn" title="지금 새로고침">↻ 새로고침</button></div>
         <p class="page-head-owner">디지털마케팅팀 김한솔</p>
@@ -624,6 +636,40 @@ function groupBy(arr, keyFn){
 }
 
 // ===== Reactive data state (populated by fetchAndRenderAll) =====
+let MASTER_TRAFFIC = FALLBACK_DATA.traffic;
+let MASTER_PURCHASE = FALLBACK_DATA.purchase;
+let CURRENT_PERIOD = 'all'; // 'all' | '06' | '07' | ...
+
+function filterByPeriod(arr, period){
+  if(period === 'all') return arr;
+  return arr.filter(r => r.date && r.date.key.slice(4,6) === period);
+}
+
+function applyPeriodFilter(){
+  traffic = filterByPeriod(MASTER_TRAFFIC, CURRENT_PERIOD);
+  purchase = filterByPeriod(MASTER_PURCHASE, CURRENT_PERIOD);
+  chDev = buildChannelDevice(traffic, purchase);
+  computeDerived();
+  safeRender('p1', renderPanel1);
+  safeRender('p2', renderPanel2);
+  safeRender('p3', renderPanel3);
+  safeRender('p4', renderPanel4);
+}
+
+function populatePeriodFilterOptions(){
+  const sel = document.getElementById('periodFilterSelect');
+  if(!sel) return;
+  const months = new Set();
+  MASTER_TRAFFIC.forEach(r=>{ if(r.date) months.add(r.date.key.slice(4,6)); });
+  MASTER_PURCHASE.forEach(r=>{ if(r.date) months.add(r.date.key.slice(4,6)); });
+  const sortedMonths = [...months].sort();
+  const prevValue = sel.value || 'all';
+  sel.innerHTML = '<option value="all">전체 데이터</option>' +
+    sortedMonths.map(m => `<option value="${m}">${parseInt(m,10)}월 데이터</option>`).join('');
+  if([...sel.options].some(o=>o.value===prevValue)) sel.value = prevValue;
+  else { sel.value = 'all'; CURRENT_PERIOD = 'all'; }
+}
+
 let traffic = FALLBACK_DATA.traffic;
 let purchase = FALLBACK_DATA.purchase;
 let chDev = FALLBACK_DATA.channelDevice;
@@ -744,12 +790,10 @@ async function loadAllData(isManual){
     }
     purchase = newPurchase;
     traffic = newTraffic;
-    chDev = buildChannelDevice(traffic, purchase);
-    computeDerived();
-    safeRender('p1', renderPanel1);
-    safeRender('p2', renderPanel2);
-    safeRender('p3', renderPanel3);
-    safeRender('p4', renderPanel4);
+    MASTER_PURCHASE = newPurchase;
+    MASTER_TRAFFIC = newTraffic;
+    populatePeriodFilterOptions();
+    applyPeriodFilter();
     const now = new Date();
     const timeStr = now.toLocaleTimeString('ko-KR', { hour:'2-digit', minute:'2-digit' });
     setStatus('ok', '실시간 연동 · ' + timeStr + ' 기준');
@@ -1334,12 +1378,15 @@ function safeRender(name, fn){
 
 // Render the reliable baked-in snapshot immediately so the dashboard is
 // never blank/erroring, then quietly try to refresh from the live sheet.
-computeDerived();
-safeRender('p1', renderPanel1);
-safeRender('p2', renderPanel2);
-safeRender('p3', renderPanel3);
-safeRender('p4', renderPanel4);
+populatePeriodFilterOptions();
+applyPeriodFilter();
 setStatus('stale', '고정 데이터 표시 중 (실시간 동기화 시도 중…)');
+
+// Period filter dropdown (전체/월별)
+document.getElementById('periodFilterSelect').addEventListener('change', (e)=>{
+  CURRENT_PERIOD = e.target.value;
+  applyPeriodFilter();
+});
 
 // Kick off live data load, then poll on an interval.
 loadAllData(false);
