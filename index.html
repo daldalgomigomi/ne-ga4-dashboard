@@ -302,7 +302,7 @@ table.data-table .medal{margin-right:6px;}
       </div>
       <div class="page-head-right">
         <select id="periodFilterSelect" class="period-filter-select">
-          <option value="all">전체 데이터</option>
+          <option value="all">전체</option>
         </select>
         <div class="period-badge" id="periodBadge">데이터 확인 중…</div>
         <div class="sync-status loading" id="syncStatus"><span class="dot"></span><span class="sync-text">데이터 불러오는 중…</span><button id="refreshBtn" title="지금 새로고침">↻ 새로고침</button></div>
@@ -664,8 +664,8 @@ function populatePeriodFilterOptions(){
   MASTER_PURCHASE.forEach(r=>{ if(r.date) months.add(r.date.key.slice(4,6)); });
   const sortedMonths = [...months].sort();
   const prevValue = sel.value || 'all';
-  sel.innerHTML = '<option value="all">전체 데이터</option>' +
-    sortedMonths.map(m => `<option value="${m}">${parseInt(m,10)}월 데이터</option>`).join('');
+  sel.innerHTML = '<option value="all">전체</option>' +
+    sortedMonths.map(m => `<option value="${m}">${parseInt(m,10)}월</option>`).join('');
   if([...sel.options].some(o=>o.value===prevValue)) sel.value = prevValue;
   else { sel.value = 'all'; CURRENT_PERIOD = 'all'; }
 }
